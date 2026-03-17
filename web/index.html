@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuizForge</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── Countdown Overlay ────────────────────────────────── -->
+<div id="overlay-countdown">
+  <div class="cd-num" id="cd-num">3</div>
+  <div class="cd-label">Get Ready</div>
+</div>
+
+<!-- ── Toast ────────────────────────────────────────────── -->
+<div id="toast"></div>
+
+<div id="app">
+
+  <!-- ══════════════════════════════════════
+       SCREEN: HOME
+  ══════════════════════════════════════ -->
+  <div class="screen active" id="screen-home">
+    <div style="text-align:center; padding-top:36px; margin-bottom:28px;">
+      <div class="logo">quiz<em>.iio</em></div>
+      <div class="tagline">Real-time multiplayer quiz game</div>
+    </div>
+
+    <div class="card">
+      <div class="tabs">
+        <button class="tab-btn active" id="tab-create" onclick="App.lobby.setTab('create')">Create Room</button>
+        <button class="tab-btn"        id="tab-join"   onclick="App.lobby.setTab('join')">Join Room</button>
+      </div>
+
+      <!-- Create panel -->
+      <div id="panel-create">
+        <div class="field">
+          <label for="c-name">Your Name</label>
+          <input type="text" id="c-name" placeholder="Enter your name…" maxlength="20" autocomplete="off">
+        </div>
+        <button class="btn btn-primary btn-full btn-lg mt8" onclick="App.lobby.createRoom()">
+          Create Game Room
+        </button>
+        <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:10px;">
+          You'll get a room code to share with friends
+        </p>
+      </div>
+
+      <!-- Join panel -->
+      <div id="panel-join" style="display:none;">
+        <div class="field">
+          <label for="j-name">Your Name</label>
+          <input type="text" id="j-name" placeholder="Enter your name…" maxlength="20" autocomplete="off">
+        </div>
+        <div class="field mt12">
+          <label for="j-code">Room Code</label>
+          <input type="text" id="j-code" class="code-input" placeholder="XXXXX" maxlength="5" autocomplete="off">
+        </div>
+        <button class="btn btn-primary btn-full btn-lg mt8" onclick="App.lobby.joinRoom()">
+          Join Game
+        </button>
+      </div>
+    </div><!-- .card -->
+
+    <div class="conn-status">
+      <div class="conn-dot pending" id="conn-dot"></div>
+      <span id="conn-text">Connecting to server…</span>
+    </div>
+  </div><!-- #screen-home -->
+
+
+  <!-- ══════════════════════════════════════
+       SCREEN: LOBBY
+  ══════════════════════════════════════ -->
+  <div class="screen" id="screen-lobby">
+    <div class="topbar">
+      <div class="logo">Quiz<em style="color:var(--accent)">Forge</em></div>
+      <button class="btn btn-ghost btn-sm" onclick="App.lobby.leaveRoom()">Leave Room</button>
+    </div>
+
+    <!-- Room code -->
+    <div class="card">
+      <div class="section-label" style="text-align:center;">Room Code — Share with friends</div>
+      <div class="room-code-big" id="lobby-code" onclick="App.lobby.copyCode()">-----</div>
+      <p class="code-copy-hint">Click to copy</p>
+      <div class="notice notice-info hidden mt12" id="lobby-notice"></div>
+    </div>
+
+    <!-- Players -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div class="card-title" style="margin:0;">Players</div>
+        <div id="player-count" style="font-size:18px;font-weight:800;color:var(--muted);">0</div>
+      </div>
+      <div class="players-list" id="players-list">
+        <div style="font-size:13px;color:var(--muted);text-align:center;padding:20px 0;">
+          Waiting for players…
+        </div>
+      </div>
+    </div>
+
+    <!-- HOST ONLY: settings + start -->
+    <div id="host-panel" style="display:none;">
+      <div class="card">
+        <div class="card-title">Game Settings</div>
+
+        <div class="field">
+          <div class="range-row">
+            <label style="margin:0;">Questions per game</label>
+            <div>
+              <span class="range-val" id="v-questions">10</span>
+              <span class="range-unit"> questions</span>
+            </div>
+          </div>
+          <input type="range" id="r-questions" min="5" max="20" value="10" step="1"
+            oninput="document.getElementById('v-questions').textContent = this.value">
+          <div class="range-hint"><span>5</span><span>20</span></div>
+        </div>
+
+        <div class="field">
+          <div class="range-row">
+            <label style="margin:0;">Seconds per question</label>
+            <div>
+              <span class="range-val" id="v-timer">35</span>
+              <span class="range-unit"> sec</span>
+            </div>
+          </div>
+          <input type="range" id="r-timer" min="10" max="60" value="35" step="5"
+            oninput="document.getElementById('v-timer').textContent = this.value">
+          <div class="range-hint"><span>10s</span><span>60s</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">AI Question Source</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">
+          Optional — Upload a file or paste text. The AI will generate quiz questions from your content.
+        </p>
+
+        <div class="field">
+          <label>Upload Text File (.txt)</label>
+          <div class="upload-zone" id="upload-zone"
+               ondragover="event.preventDefault(); this.classList.add('drag-over')"
+               ondragleave="this.classList.remove('drag-over')"
+               ondrop="App.lobby.handleDrop(event)">
+            <input type="file" accept=".txt" id="file-input" onchange="App.lobby.handleFileSelect(event)">
+            <div class="upload-icon">↑</div>
+            <p>Drop a .txt file here or click to browse</p>
+            <div class="upload-file-name hidden" id="file-label"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Or Paste Text / Topic Below</label>
+          <textarea id="ctx-text"
+            placeholder="Paste study notes, an article, or describe the topic in a few sentences…"></textarea>
+        </div>
+
+        <button class="btn btn-secondary btn-full" onclick="App.lobby.saveContext()">Save AI Source</button>
+        <div class="notice notice-ok hidden mt12" id="ctx-saved-notice">
+          AI source saved. Questions will be generated from your content.
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-full btn-lg" id="start-btn" onclick="App.lobby.startGame()">
+        Start Game
+      </button>
+      <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:10px;">
+        Only you (the host) can start the game
+      </p>
+    </div><!-- #host-panel -->
+
+    <!-- PLAYER ONLY: waiting notice -->
+    <div id="player-wait" style="display:none;">
+      <div class="notice notice-info">
+        Waiting for the host to start the game…
+      </div>
+    </div>
+  </div><!-- #screen-lobby -->
+
+
+  <!-- ══════════════════════════════════════
+       SCREEN: GAME
+  ══════════════════════════════════════ -->
+  <div class="screen wide" id="screen-game">
+    <div class="q-topbar">
+      <div class="q-progress-text">
+        Q <span id="g-qnum">1</span> / <span id="g-qtotal">10</span>
+      </div>
+
+      <div class="timer-wrap">
+        <svg width="62" height="62" viewBox="0 0 62 62">
+          <circle cx="31" cy="31" r="26" fill="none" stroke="#e0e0e0" stroke-width="4"/>
+          <circle id="timer-arc" cx="31" cy="31" r="26" fill="none"
+            stroke="var(--accent)" stroke-width="4"
+            stroke-dasharray="163.4" stroke-dashoffset="0" stroke-linecap="round"/>
+        </svg>
+        <div class="timer-num" id="timer-num">35</div>
+      </div>
+
+      <div class="q-topic-pill" id="g-topic">General</div>
+    </div>
+
+    <div class="card">
+      <div class="q-text" id="g-question">Loading question…</div>
+      <div class="options-grid" id="g-options"></div>
+    </div>
+
+    <div class="answered-status" id="g-answered"></div>
+  </div><!-- #screen-game -->
+
+
+  <!-- ══════════════════════════════════════
+       SCREEN: REVEAL
+  ══════════════════════════════════════ -->
+  <div class="screen wide" id="screen-reveal">
+    <div class="q-topbar">
+      <div class="q-progress-text">
+        Q <span id="rv-qnum">1</span> / <span id="rv-qtotal">10</span>
+      </div>
+      <div class="next-q-line">Next in <span id="rv-next">10</span>s</div>
+    </div>
+
+    <div class="card">
+      <div class="result-hero">
+        <div class="result-verdict" id="rv-verdict">Correct!</div>
+        <div class="result-points-line mt8">Earned: <span id="rv-pts">+0</span></div>
+        <div class="result-points-line mt8">Your score: <span id="rv-total">0</span></div>
+        <div class="result-points-line mt8" id="rv-streak" style="color:#7c3aed;"></div>
+      </div>
+      <div class="explanation-box hidden" id="rv-explanation"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Leaderboard</div>
+      <div id="rv-lb"></div>
+    </div>
+  </div><!-- #screen-reveal -->
+
+
+  <!-- ══════════════════════════════════════
+       SCREEN: RESULTS
+  ══════════════════════════════════════ -->
+  <div class="screen wide" id="screen-results">
+    <div class="topbar">
+      <div class="logo">Quiz<em style="color:var(--accent)">Forge</em></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="text-align:center;">Game Over</div>
+      <div class="winner-section">
+        <div class="winner-crown-icon">★</div>
+        <div class="winner-lbl">Winner</div>
+        <div class="winner-nm" id="res-winner">—</div>
+        <div class="winner-pts" id="res-winner-pts"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Final Scores</div>
+      <div id="res-lb"></div>
+    </div>
+
+    <div class="btn-group" id="res-actions"></div>
+  </div><!-- #screen-results -->
+
+</div><!-- #app -->
+
+
+<!-- ── JavaScript modules (load order matters) ──────────── -->
+<script src="js/utils.js"></script>
+<script src="js/state.js"></script>
+<script src="js/toast.js"></script>
+<script src="js/screens.js"></script>
+<script src="js/connection.js"></script>
+<script src="js/timer.js"></script>
+<script src="js/countdown.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/lobby.js"></script>
+<script src="js/game.js"></script>
+<script src="js/messages.js"></script>
+<script src="js/keyboard.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
