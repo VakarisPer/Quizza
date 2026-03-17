@@ -1,4 +1,4 @@
-# QuizForge
+# Quiz.iio
 
 Real-time multiplayer quiz game. A host creates a room, shares the code, players join, and the server runs a timed question-and-answer loop with live scoring.
 
@@ -9,7 +9,7 @@ Optionally, the host can paste study notes or upload a `.txt` file and the serve
 ## Project layout
 
 ```
-quizforge/
+Quiz.iio/
 ├── web/                    # Client (static files served by the Node server)
 │   ├── index.html          # All screens and HTML markup
 │   ├── style.css           # Full stylesheet
