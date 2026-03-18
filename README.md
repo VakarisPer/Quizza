@@ -1,4 +1,4 @@
-# Quiz.iio
+# Quizza
 
 Real-time multiplayer quiz game. A host creates a room, shares the code, players join, and the server runs a timed question-and-answer loop with live scoring.
 
@@ -11,7 +11,7 @@ currently running on  [Quiz App](https://quiz-iio.onrender.com/)  (help from das
 ## Project layout
 
 ```
-Quiz.iio/
+Quizza/
 ├── web/                    # Client (static files served by the Node server)
 │   ├── index.html          # All screens and HTML markup
 │   ├── style.css           # Full stylesheet
