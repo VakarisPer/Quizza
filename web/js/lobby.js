@@ -127,19 +127,53 @@ class LobbyController {
   // ── Private ───────────────────────────────────────────────
 
   _loadFile(file) {
-    if (!file.name.toLowerCase().endsWith('.txt')) {
-      App.toast.show('Only .txt files are supported', 'err');
+    const name    = file.name.toLowerCase();
+    const isText  = ['.txt', '.md', '.json'].some(ext => name.endsWith(ext));
+    const isPdf   = name.endsWith('.pdf');
+
+    if (!isText && !isPdf) {
+      App.toast.show('Supported formats: .txt .md .pdf .json', 'err');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target.result;
-      Utils.q('#ctx-text').value = text;
+    if (file.size > 5 * 1024 * 1024) {
+      App.toast.show('File too large (max 5 MB)', 'err');
+      return;
+    }
+
+    if (isText) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target.result;
+        Utils.q('#ctx-text').value = text;
+        const lbl = Utils.q('#file-label');
+        lbl.textContent = `Loaded: ${file.name} (${Math.round(text.length / 1024 * 10) / 10} KB)`;
+        lbl.classList.remove('hidden');
+        App.toast.show('File loaded: ' + file.name, 'ok');
+      };
+      reader.readAsText(file);
+    } else {
+      // PDF — send raw bytes to server for extraction
       const lbl = Utils.q('#file-label');
-      lbl.textContent = `Loaded: ${file.name} (${Math.round(text.length / 1024 * 10) / 10} KB)`;
+      lbl.textContent = 'Extracting ' + file.name + '…';
       lbl.classList.remove('hidden');
-      App.toast.show('File loaded: ' + file.name, 'ok');
-    };
-    reader.readAsText(file);
+
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const bytes  = new Uint8Array(ev.target.result);
+        let binary   = '';
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        App.conn.send({ type: 'upload_file', name: file.name, data: btoa(binary) });
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  }
+
+  /** Populate the context textarea with server-extracted file text. */
+  handleFileText(m) {
+    Utils.q('#ctx-text').value = m.text;
+    const lbl = Utils.q('#file-label');
+    lbl.textContent = `Extracted: ${m.name} (${Math.round(m.text.length / 1024 * 10) / 10} KB)`;
+    lbl.classList.remove('hidden');
+    App.toast.show('Extracted: ' + m.name, 'ok');
   }
 }

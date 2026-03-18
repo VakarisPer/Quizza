@@ -76,6 +76,10 @@ class MessageHandler {
         App.game.updateAnsweredCount(m.answered_count, m.total);
         break;
 
+      case 'skip_votes':
+        App.game.updateSkipVotes(m.count, m.needed);
+        break;
+
       case 'reveal':
         App.game.showReveal(m);
         break;
@@ -90,7 +94,16 @@ class MessageHandler {
         App.lobby.reset();
         break;
 
+      case 'file_text':
+        App.lobby.handleFileText(m);
+        break;
+
       // ── Errors ────────────────────────────────────────────
+      case 'game_error':
+        App.countdown.hide();
+        App.toast.show(m.msg, 'err');
+        break;
+
       case 'error':
         App.toast.show(m.msg, 'err');
         break;

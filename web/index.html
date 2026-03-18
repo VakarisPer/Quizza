@@ -5,17 +5,61 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QuizForge</title>
   <link rel="stylesheet" href="style.css">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3801946032700515"
+     crossorigin="anonymous"></script>
+  <script>
+    (function() {
+      var t = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
 </head>
 <body>
 
 <!-- ── Countdown Overlay ────────────────────────────────── -->
 <div id="overlay-countdown">
   <div class="cd-num" id="cd-num">3</div>
-  <div class="cd-label">Get Ready</div>
+  <div class="cd-label" id="cd-label">Get Ready</div>
+
+  <!-- shown after countdown finishes while questions are still generating -->
+  <div class="cd-loading hidden" id="cd-loading">
+    <div class="cd-spinner"></div>
+    <div class="cd-loading-text">Generating questions…</div>
+    <div class="cd-loading-sub" id="cd-est">0s elapsed</div>
+  </div>
 </div>
+
+<!-- ── Theme toggle ─────────────────────────────────────── -->
+<button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark / light mode">
+  <span id="theme-icon"></span>
+</button>
 
 <!-- ── Toast ────────────────────────────────────────────── -->
 <div id="toast"></div>
+
+<!-- ── Mobile bottom ad (hidden on desktop) ─────────────── -->
+<div id="ad-bottom">
+  <ins class="adsbygoogle"
+       style="display:block"
+       data-ad-client="ca-pub-3801946032700515"
+       data-ad-slot="YOUR_SLOT_ID"
+       data-ad-format="horizontal"
+       data-full-width-responsive="true"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+</div>
+
+<!-- ── Page layout: side ads + content ──────────────────── -->
+<div id="page-layout">
+
+  <div class="ad-col" id="ad-left">
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-3801946032700515"
+         data-ad-slot="YOUR_SLOT_ID"
+         data-ad-format="vertical"
+         data-full-width-responsive="false"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </div>
 
 <div id="app">
 
@@ -140,14 +184,14 @@
         </p>
 
         <div class="field">
-          <label>Upload Text File (.txt)</label>
+          <label>Upload File (.txt .md .pdf .json)</label>
           <div class="upload-zone" id="upload-zone"
                ondragover="event.preventDefault(); this.classList.add('drag-over')"
                ondragleave="this.classList.remove('drag-over')"
                ondrop="App.lobby.handleDrop(event)">
-            <input type="file" accept=".txt" id="file-input" onchange="App.lobby.handleFileSelect(event)">
+            <input type="file" accept=".txt,.md,.pdf,.json" id="file-input" onchange="App.lobby.handleFileSelect(event)">
             <div class="upload-icon">↑</div>
-            <p>Drop a .txt file here or click to browse</p>
+            <p>Drop a file here or click to browse (.txt .md .pdf .json)</p>
             <div class="upload-file-name hidden" id="file-label"></div>
           </div>
         </div>
@@ -220,7 +264,10 @@
       <div class="q-progress-text">
         Q <span id="rv-qnum">1</span> / <span id="rv-qtotal">10</span>
       </div>
-      <div class="next-q-line">Next in <span id="rv-next">10</span>s</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="next-q-line">Next in <span id="rv-next">10</span>s</div>
+        <button class="btn btn-ghost btn-sm" id="rv-skip-btn" onclick="App.game.voteSkip()">Skip (0/1)</button>
+      </div>
     </div>
 
     <div class="card">
@@ -268,6 +315,18 @@
 
 </div><!-- #app -->
 
+  <div class="ad-col" id="ad-right">
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-3801946032700515"
+         data-ad-slot="YOUR_SLOT_ID"
+         data-ad-format="vertical"
+         data-full-width-responsive="false"></ins>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+  </div>
+
+</div><!-- #page-layout -->
+
 
 <!-- ── JavaScript modules (load order matters) ──────────── -->
 <script src="js/utils.js"></script>
@@ -283,6 +342,18 @@
 <script src="js/messages.js"></script>
 <script src="js/keyboard.js"></script>
 <script src="js/app.js"></script>
+
+<script>
+  function toggleTheme() {
+    var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    document.getElementById('theme-icon').textContent = next === 'dark' ? '\u2600' : '\u263D';
+    localStorage.setItem('theme', next);
+  }
+  // Set initial icon to match saved theme
+  document.getElementById('theme-icon').textContent =
+    document.documentElement.getAttribute('data-theme') === 'dark' ? '\u2600' : '\u263D';
+</script>
 
 </body>
 </html>

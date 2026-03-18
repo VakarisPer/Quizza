@@ -19,6 +19,7 @@ const Config = {
     QUESTIONS_PER_GAME: 10,
     MIN_PLAYERS:        1,
     REVEAL_WAIT:        10_000, // ms between reveal and next question
+    SKIP_VOTE_FRACTION: 0.5,   // fraction of players required to skip (majority)
   },
 
   /** Limits applied when validating host-submitted settings. */
@@ -33,6 +34,7 @@ const Config = {
     MAX_NAME_LEN:      20,
     MAX_CHAT_LEN:      120,
     MAX_AI_TOKENS_PING: 8,
+    MAX_FILE_BYTES:    5 * 1024 * 1024, // 5 MB file upload limit
   },
 };
 

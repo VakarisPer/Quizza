@@ -34,6 +34,8 @@ const MessageHandler = {
       case 'set_context': return this._setContext(ws, pid, msg, room, code);
       case 'start_game':  return this._startGame(ws, pid, msg, room, code);
       case 'answer':      return this._answer(ws, pid, msg, room, code);
+      case 'vote_skip':   return this._voteSkip(ws, pid, msg, room, code);
+      case 'upload_file': this._uploadFile(ws, pid, msg, room, code).catch(e => log.error('Upload', e.message)); return;
       case 'chat':        return this._chat(ws, pid, msg, room, code);
       case 'play_again':  return this._playAgain(ws, pid, msg, room, code);
       case 'leave_room':  return this._leaveRoom(ws, pid, room, code);
@@ -66,6 +68,7 @@ const MessageHandler = {
       },
       _timerInterval: null,
       _revealTimeout: null,
+      skipVotes:      new Set(),
     };
 
     RoomStore.rooms.set(code, room);
@@ -215,6 +218,71 @@ const MessageHandler = {
 
     log.debug('Chat', `${code} — ${player.name}: ${text}`);
     RoomHelpers.broadcast(room, { type: 'chat', pid, name: player.name, text });
+  },
+
+  _voteSkip(ws, pid, msg, room, code) {
+    if (!this._requireRoom(ws, pid, room)) return;
+    if (room.state !== 'playing') return;
+
+    // Only valid while the reveal countdown is active
+    if (!room._revealTimeout) {
+      log.debug('Game', `${code} — skip vote from ${pid} ignored (not in reveal phase)`);
+      return;
+    }
+
+    if (!room.skipVotes) room.skipVotes = new Set();
+    room.skipVotes.add(pid);
+
+    const total  = room.players.size;
+    const needed = Math.max(1, Math.ceil(total * Config.DEFAULTS.SKIP_VOTE_FRACTION));
+    const count  = room.skipVotes.size;
+
+    log.debug('Game', `${code} — skip vote: ${count}/${needed}`);
+    RoomHelpers.broadcast(room, { type: 'skip_votes', count, needed });
+
+    if (count >= needed) {
+      log.info('Game', `${code} — skip threshold reached, advancing`);
+      room.skipVotes = new Set();
+      GameLoop.advanceFromReveal(room);
+    }
+  },
+
+  async _uploadFile(ws, pid, msg, room, code) {
+    if (!this._requireRoom(ws, pid, room)) return;
+    if (!this._requireHost(ws, pid, room, code)) return;
+
+    const name = String(msg.name || 'file').slice(0, 200);
+    const data = String(msg.data || '');
+
+    if (!data) { this._error(ws, 'No file data received.'); return; }
+
+    const maxB64 = Math.ceil(Config.LIMITS.MAX_FILE_BYTES * 4 / 3);
+    if (data.length > maxB64) {
+      this._error(ws, 'File too large (max 5 MB).');
+      return;
+    }
+
+    try {
+      const buffer = Buffer.from(data, 'base64');
+      let text;
+
+      if (name.toLowerCase().endsWith('.pdf')) {
+        const pdfParse = require('pdf-parse');
+        const result   = await pdfParse(buffer);
+        text = result.text;
+      } else {
+        text = buffer.toString('utf-8');
+      }
+
+      text = text.slice(0, Config.LIMITS.MAX_CONTEXT_CHARS);
+      log.info('Room', `${code} — file "${name}" extracted: ${text.length} chars`);
+
+      const player = room.players.get(pid);
+      if (player) RoomHelpers.sendTo(player, { type: 'file_text', name, text });
+    } catch (err) {
+      log.error('Upload', `${code} — failed to parse "${name}": ${err.message}`);
+      this._error(ws, `Could not extract text from "${name}". Try a .txt or .md file instead.`);
+    }
   },
 
   _playAgain(ws, pid, msg, room, code) {

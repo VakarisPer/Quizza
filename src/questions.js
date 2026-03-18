@@ -3,56 +3,6 @@
 const Config = require('./config');
 const log    = require('./logger');
 
-// ── Fallback question bank ────────────────────────────────────────────────────
-
-const FALLBACK_QUESTIONS = [
-  {
-    q: 'What is the main building block of digital logic circuits?',
-    options: ['Transistor', 'Capacitor', 'Resistor', 'Diode'],
-    correct: 0,
-    topic: 'Electronics',
-    explanation: 'Transistors act as electronic switches and are the fundamental building block of all digital circuits.',
-  },
-  {
-    q: 'Which data structure operates on a Last-In-First-Out (LIFO) principle?',
-    options: ['Queue', 'Stack', 'Linked List', 'Tree'],
-    correct: 1,
-    topic: 'Data Structures',
-    explanation: 'A stack is a LIFO structure — the last item pushed is the first one popped.',
-  },
-  {
-    q: 'What does HTTP stand for?',
-    options: [
-      'HyperText Transfer Protocol',
-      'High Traffic Text Protocol',
-      'HyperText Transmission Process',
-      'Hosted Text Transfer Protocol',
-    ],
-    correct: 0,
-    topic: 'Networking',
-    explanation: 'HTTP (HyperText Transfer Protocol) is the foundation of data communication on the web.',
-  },
-  {
-    q: 'Which sorting algorithm has the best average-case time complexity?',
-    options: ['Bubble Sort', 'Insertion Sort', 'Merge Sort', 'Selection Sort'],
-    correct: 2,
-    topic: 'Algorithms',
-    explanation: 'Merge Sort achieves O(n log n) average-case performance, outperforming O(n²) algorithms on large datasets.',
-  },
-  {
-    q: 'What does RAM stand for?',
-    options: [
-      'Random Access Memory',
-      'Read And Modify',
-      'Rapid Array Management',
-      'Runtime Allocation Module',
-    ],
-    correct: 0,
-    topic: 'Hardware',
-    explanation: 'RAM (Random Access Memory) is volatile short-term memory used by a computer while it is running.',
-  },
-];
-
 // ── AI generation ─────────────────────────────────────────────────────────────
 
 const AI_URL = 'https://api.deepseek.com/v1/chat/completions';
@@ -64,13 +14,13 @@ const SYSTEM_PROMPT =
   '"correct" is the 0-based index of the correct option. Generate varied, clear questions.';
 
 /**
- * QuestionService — generates quiz questions either from the AI API
- * or falls back to the built-in bank when the key is absent or the
- * request fails.
+ * QuestionService — generates quiz questions from the DeepSeek AI API.
+ * Throws an Error if generation fails for any reason; the caller is
+ * responsible for aborting the game and notifying clients.
  */
 const QuestionService = {
   /**
-   * Return `count` questions, using DeepSeek when a key + context are available.
+   * Return `count` questions using DeepSeek. Throws on any failure.
    *
    * @param {string} topicContext  Raw text pasted / uploaded by the host.
    * @param {number} count         Number of questions needed.
@@ -78,8 +28,7 @@ const QuestionService = {
    */
   async generate(topicContext, count) {
     if (!Config.DEEPSEEK_API_KEY) {
-      log.warn('AI', 'No API key — using built-in fallback questions');
-      return this._fallback(count);
+      throw new Error('No API key configured — cannot generate questions.');
     }
 
     const contextChars = String(topicContext || '').slice(0, Config.LIMITS.AI_CONTEXT_CHARS);
@@ -87,16 +36,12 @@ const QuestionService = {
 
     // Connectivity ping before the expensive request
     const pingOk = await this._ping();
-    if (!pingOk) return this._fallback(count);
+    if (!pingOk) throw new Error('DeepSeek API is unreachable. Check your connection or API key.');
 
     return this._fetchQuestions(contextChars, count);
   },
 
   // ── Private ────────────────────────────────────────────────────────────────
-
-  _fallback(count) {
-    return FALLBACK_QUESTIONS.slice(0, count);
-  },
 
   /** Send a cheap 1-token request to confirm the API is reachable. */
   async _ping() {
@@ -154,7 +99,7 @@ const QuestionService = {
       if (!res.ok) {
         const body = await res.text();
         log.error('AI', `Request failed — HTTP ${res.status}: ${body.slice(0, 300)}`);
-        return this._fallback(count);
+        throw new Error(`AI request failed (HTTP ${res.status}).`);
       }
 
       const data  = await res.json();
@@ -164,14 +109,16 @@ const QuestionService = {
 
       if (!Array.isArray(questions) || questions.length === 0) {
         log.error('AI', 'Parsed response is not a valid array:', raw.slice(0, 200));
-        return this._fallback(count);
+        throw new Error('AI returned an invalid response. Try again.');
       }
 
       log.info('AI', `Successfully generated ${questions.length} questions`);
       return questions.slice(0, count);
     } catch (err) {
       log.error('AI', 'Request exception:', err.message);
-      return this._fallback(count);
+      throw err instanceof SyntaxError
+        ? new Error('AI response could not be parsed. Try again.')
+        : err;
     }
   },
 

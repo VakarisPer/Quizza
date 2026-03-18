@@ -22,30 +22,35 @@ const GameLoop = {
    * @param {object} room
    */
   async startGame(room) {
-    const count  = room.config.questionsPerGame;
-    const hasCtx = !!(room.topicContext && Config.DEEPSEEK_API_KEY);
+    const count = room.config.questionsPerGame;
 
-    log.info('Game', `Room ${room.code} — starting: ${count} questions, ${room.config.roundDuration}s/q, AI: ${hasCtx}`);
+    log.info('Game', `Room ${room.code} — starting: ${count} questions, ${room.config.roundDuration}s/q`);
 
     room.state = 'starting';
     RoomHelpers.broadcast(room, { type: 'game_starting', countdown: 3 });
 
-    if (hasCtx) {
-      RoomHelpers.broadcast(room, { type: 'status', msg: 'AI is generating questions from your content…' });
-      room.questions = await QuestionService.generate(room.topicContext, count);
-    } else {
-      room.questions = await QuestionService.generate('', count);
-      if (room.topicContext && !Config.DEEPSEEK_API_KEY) {
-        log.warn('Game', `Room ${room.code} — context set but DEEPSEEK_API_KEY missing; using fallback`);
-      }
+    // Run question generation and the 3-second countdown display in parallel.
+    // Either completing first will wait for the other; if generation throws,
+    // the game is aborted and clients are notified.
+    let questions;
+    try {
+      const COUNTDOWN_MS = 3000;
+      [questions] = await Promise.all([
+        QuestionService.generate(room.topicContext, count),
+        new Promise(r => setTimeout(r, COUNTDOWN_MS)),
+      ]);
+    } catch (err) {
+      log.error('Game', `Room ${room.code} — question generation failed: ${err.message}`);
+      room.state = 'lobby';
+      RoomHelpers.broadcast(room, { type: 'game_error', msg: `Could not generate questions: ${err.message}` });
+      return;
     }
 
-    log.info('Game', `Room ${room.code} — ${room.questions.length} questions ready`);
+    log.info('Game', `Room ${room.code} — ${questions.length} questions ready`);
 
-    // Wait for the client countdown to finish before showing Q1
-    await new Promise(r => setTimeout(r, 3000));
-    room.state    = 'playing';
-    room.currentQ = 0;
+    room.questions = questions;
+    room.state     = 'playing';
+    room.currentQ  = 0;
     this._runQuestion(room);
   },
 
@@ -69,6 +74,7 @@ const GameLoop = {
     log.info('Game', `Room ${room.code} — Q${room.currentQ + 1}/${room.questions.length}: "${q.q.slice(0, 60)}…"`);
 
     room.qStartTime = Date.now();
+    room.skipVotes  = new Set();
 
     // Reset answered flag for all players
     for (const p of room.players.values()) p.answered = false;
@@ -136,10 +142,24 @@ const GameLoop = {
       leaderboard:   RoomHelpers.leaderboard(room),
     });
 
+    room.skipVotes = new Set();
     room._revealTimeout = setTimeout(() => {
       room.currentQ += 1;
       if (room.state === 'playing') this._runQuestion(room);
     }, Config.DEFAULTS.REVEAL_WAIT);
+  },
+
+  /**
+   * Cancel the reveal wait and immediately advance to the next question.
+   * Called when enough players vote to skip.
+   *
+   * @param {object} room
+   */
+  advanceFromReveal(room) {
+    clearTimeout(room._revealTimeout);
+    room._revealTimeout = null;
+    room.currentQ += 1;
+    if (room.state === 'playing') this._runQuestion(room);
   },
 
   /**

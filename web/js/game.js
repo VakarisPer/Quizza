@@ -39,6 +39,7 @@ class GameController {
     this.curAnswer  = null;
     this.lastResult = null;
     this.curQNum    = m.index + 1;
+    this.stopRevealCountdown();
     this.totalQs    = m.total;
     this.qDuration  = m.duration;
 
@@ -98,6 +99,13 @@ class GameController {
     this._renderExplanation(m.explanation);
 
     App.renderer.renderLeaderboard(m.leaderboard, 'rv-lb', App.state.myPid);
+
+    // Reset skip-vote button
+    const skipBtn = Utils.q('#rv-skip-btn');
+    const needed  = Math.max(1, Math.ceil(m.leaderboard.length / 2));
+    skipBtn.textContent = 'Skip (0/' + needed + ')';
+    skipBtn.disabled    = false;
+
     this._startRevealCountdown();
     App.screens.show('screen-reveal');
   }
@@ -124,6 +132,19 @@ class GameController {
   /** Ask the server to reset to the lobby for another round (host only). */
   playAgain() {
     App.conn.send({ type: 'play_again' });
+  }
+
+  /** Send a skip vote to the server (player can only vote once per reveal). */
+  voteSkip() {
+    const btn = Utils.q('#rv-skip-btn');
+    if (btn) btn.disabled = true;
+    App.conn.send({ type: 'vote_skip' });
+  }
+
+  /** Update the skip button label with current vote counts. */
+  updateSkipVotes(count, needed) {
+    const btn = Utils.q('#rv-skip-btn');
+    if (btn) btn.textContent = 'Skip (' + count + '/' + needed + ')';
   }
 
   /** Stop the reveal next-question countdown. */
