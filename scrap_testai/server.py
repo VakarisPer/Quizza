@@ -1,5 +1,5 @@
 """
-QuizForge Multiplayer Server
+Quizza Multiplayer Server
 Run: python server.py [port]
 """
 import asyncio
@@ -454,7 +454,7 @@ async def handler(ws):
 async def main():
     print(f"""
 ╔══════════════════════════════════════════╗
-║     QuizForge Multiplayer Server         ║
+║     Quizza Multiplayer Server         ║
 ║     WebSocket: ws://localhost:{PORT}        ║
 ║     AI: {'✓ DeepSeek' if DEEPSEEK_API_KEY else '✗ Nėra API rakto (fallback)'}{'                 ' if DEEPSEEK_API_KEY else '            '}║
 ╚══════════════════════════════════════════╝

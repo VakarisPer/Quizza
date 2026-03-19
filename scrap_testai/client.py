@@ -1,5 +1,5 @@
 """
-QuizForge Multiplayer Client
+Quizza Multiplayer Client
 Run: python client.py
 Controls: Mouse clicks, keyboard typing
 """
@@ -224,7 +224,7 @@ class Notification:
 class GameClient:
     def __init__(self):
         pygame.init()
-        pygame.display.set_caption("⚡ QuizForge")
+        pygame.display.set_caption("⚡ Quizza")
         self.screen = pygame.display.set_mode((W, H))
         self.clock = pygame.time.Clock()
 
@@ -465,7 +465,7 @@ class GameClient:
         pygame.draw.rect(self.screen, C["surface"], (0, 0, W, 60))
         pygame.draw.line(self.screen, C["border"], (0, 60), (W, 60))
         # Logo
-        logo = self.f_med.render("⚡ QuizForge", True, C["text"])
+        logo = self.f_med.render("⚡ Quizza", True, C["text"])
         self.screen.blit(logo, (20, 18))
         # Subtitle
         if subtitle:
