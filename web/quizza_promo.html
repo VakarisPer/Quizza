@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18029983298"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+    gtag('config', 'AW-18029983298');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QUIZZA — Promo</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700;900&family=JetBrains+Mono:wght@700&display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Fixed 1080×1080 design stage — JS scales it to fit any viewport */
+    #stage {
+      background: #0a0a0f;
+      color: #fff;
+      font-family: 'Space Grotesk', sans-serif;
+      width: 1080px;
+      height: 1080px;
+      overflow: hidden;
+      position: relative;
+      flex-shrink: 0;
+      transform-origin: center center;
+    }
+
+    /* GRID BG */
+    .grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(59, 130, 246, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59, 130, 246, 0.07) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    .grid-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 50%, transparent 30%, #0a0a0f 80%);
+    }
+
+    /* SCENES */
+    .scene {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease;
+    }
+
+    .scene.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* SCENE 1 — BRAND INTRO */
+    #s1 .logo {
+      font-size: 120px;
+      font-weight: 900;
+      letter-spacing: -4px;
+      transform: scale(0.4);
+      opacity: 0;
+      transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s;
+    }
+
+    #s1 .logo span {
+      color: #3b82f6;
+    }
+
+    #s1 .tagline {
+      font-size: 24px;
+      color: #94a3b8;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      opacity: 0;
+      margin-top: 16px;
+      transform: translateY(20px);
+      transition: opacity 0.6s 0.5s, transform 0.6s 0.5s;
+    }
+
+    #s1.active .logo {
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    #s1.active .tagline {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* SCENE 2 — ROOM LOBBY */
+    #s2 .room-card {
+      background: #12121a;
+      border: 1.5px solid #1e2435;
+      border-radius: 20px;
+      padding: 40px 48px;
+      width: 560px;
+      text-align: center;
+      transform: translateY(50px);
+      opacity: 0;
+      transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s;
+    }
+
+    #s2.active .room-card {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    #s2 .room-label {
+      font-size: 13px;
+      letter-spacing: 4px;
+      color: #64748b;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    #s2 .room-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 72px;
+      font-weight: 700;
+      letter-spacing: 8px;
+      color: #3b82f6;
+    }
+
+    #s2 .divider {
+      width: 100%;
+      height: 1px;
+      background: #1e2435;
+      margin: 28px 0;
+    }
+
+    #s2 .players-label {
+      font-size: 13px;
+      letter-spacing: 3px;
+      color: #64748b;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    #s2 .player-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    #s2 .player {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #0d1117;
+      border: 1px solid #1e2435;
+      border-radius: 12px;
+      padding: 12px 18px;
+      opacity: 0;
+      transform: translateX(-20px);
+      transition: opacity 0.4s, transform 0.4s;
+    }
+
+    #s2.active .player:nth-child(1) {
+      opacity: 1;
+      transform: none;
+      transition-delay: 0.3s;
+    }
+
+    #s2.active .player:nth-child(2) {
+      opacity: 1;
+      transform: none;
+      transition-delay: 0.5s;
+    }
+
+    #s2.active .player:nth-child(3) {
+      opacity: 1;
+      transform: none;
+      transition-delay: 0.7s;
+    }
+
+    #s2.active .player:nth-child(4) {
+      opacity: 1;
+      transform: none;
+      transition-delay: 0.9s;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .av-blue {
+      background: #1d4ed8;
+      color: #bfdbfe;
+    }
+
+    .av-purple {
+      background: #6d28d9;
+      color: #ede9fe;
+    }
+
+    .av-green {
+      background: #15803d;
+      color: #bbf7d0;
+    }
+
+    .av-rose {
+      background: #be123c;
+      color: #fecdd3;
+    }
+
+    .player-name {
+      font-size: 16px;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .host-badge {
+      background: #1e3a5f;
+      color: #60a5fa;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+    }
+
+    /* SCENE 3 — QUESTION */
+    #s3 .q-wrap {
+      width: 780px;
+      text-align: center;
+    }
+
+    #s3 .q-timer-ring {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 32px;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: opacity 0.4s, transform 0.4s;
+    }
+
+    #s3.active .q-timer-ring {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    #s3 .q-number {
+      font-size: 13px;
+      letter-spacing: 4px;
+      color: #64748b;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      opacity: 0;
+      transition: opacity 0.4s 0.1s;
+    }
+
+    #s3.active .q-number {
+      opacity: 1;
+    }
+
+    #s3 .q-text {
+      font-size: 38px;
+      font-weight: 700;
+      line-height: 1.3;
+      color: #f1f5f9;
+      margin-bottom: 48px;
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s 0.2s, transform 0.6s 0.2s;
+    }
+
+    #s3.active .q-text {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #s3 .answers {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    #s3 .ans {
+      background: #12121a;
+      border: 1.5px solid #1e2435;
+      border-radius: 16px;
+      padding: 22px 28px;
+      font-size: 20px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.4s, transform 0.4s, border-color 0.3s, background 0.3s;
+    }
+
+    #s3.active .ans:nth-child(1) {
+      opacity: 1;
+      transform: none;
+      transition-delay: 0.3s;
+    }
+
+    #s3.active .ans:nth-child(2) {
+      opacity: 1;
+      transform: none;
+      transition-delay: 0.4s;
+    }
+
+    #s3.active .ans:nth-child(3) {
+      opacity: 1;
+      transform: none;
+      transition-delay: 0.5s;
+    }
+
+    #s3.active .ans:nth-child(4) {
+      opacity: 1;
+      transform: none;
+      transition-delay: 0.6s;
+    }
+
+    .ans .letter {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .la {
+      background: #1e3a5f;
+      color: #60a5fa;
+    }
+
+    .lb {
+      background: #1a2e1a;
+      color: #4ade80;
+    }
+
+    .lc {
+      background: #2d1a2e;
+      color: #c084fc;
+    }
+
+    .ld {
+      background: #2e1a1a;
+      color: #f87171;
+    }
+
+    .ans.correct {
+      border-color: #22c55e;
+      background: #0f2417;
+      animation: pulseGreen 0.5s ease;
+    }
+
+    .ans.wrong {
+      border-color: #ef4444;
+      background: #2a0f0f;
+    }
+
+    @keyframes pulseGreen {
+      0% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.03);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    /* SCENE 4 — SCOREBOARD */
+    #s4 .score-wrap {
+      width: 600px;
+    }
+
+    #s4 .score-title {
+      font-size: 52px;
+      font-weight: 900;
+      letter-spacing: -2px;
+      text-align: center;
+      margin-bottom: 8px;
+      opacity: 0;
+      transform: translateY(-30px);
+      transition: opacity 0.5s, transform 0.5s;
+    }
+
+    #s4.active .score-title {
+      opacity: 1;
+      transform: none;
+    }
+
+    #s4 .score-sub {
+      text-align: center;
+      color: #64748b;
+      font-size: 16px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 40px;
+      opacity: 0;
+      transition: opacity 0.4s 0.2s;
+    }
+
+    #s4.active .score-sub {
+      opacity: 1;
+    }
+
+    #s4 .score-row {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      background: #12121a;
+      border: 1.5px solid #1e2435;
+      border-radius: 16px;
+      padding: 18px 24px;
+      margin-bottom: 12px;
+      opacity: 0;
+      transform: translateX(-30px);
+      transition: opacity 0.5s, transform 0.5s;
+    }
+
+    #s4.active .score-row:nth-child(1) {
+      opacity: 1;
+      transform: none;
+      transition-delay: 0.2s;
+    }
+
+    #s4.active .score-row:nth-child(2) {
+      opacity: 1;
+      transform: none;
+      transition-delay: 0.35s;
+    }
+
+    #s4.active .score-row:nth-child(3) {
+      opacity: 1;
+      transform: none;
+      transition-delay: 0.5s;
+    }
+
+    #s4.active .score-row:nth-child(4) {
+      opacity: 1;
+      transform: none;
+      transition-delay: 0.65s;
+    }
+
+    #s4 .rank {
+      font-size: 22px;
+      font-weight: 900;
+      color: #64748b;
+      width: 32px;
+      text-align: center;
+    }
+
+    #s4 .rank.gold {
+      color: #fbbf24;
+    }
+
+    #s4 .rank.silver {
+      color: #94a3b8;
+    }
+
+    #s4 .rank.bronze {
+      color: #b45309;
+    }
+
+    #s4 .s-name {
+      flex: 1;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    #s4 .bar-wrap {
+      flex: 2;
+      background: #1e2435;
+      border-radius: 6px;
+      height: 8px;
+      overflow: hidden;
+    }
+
+    #s4 .bar {
+      height: 100%;
+      border-radius: 6px;
+      width: 0;
+      transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    #s4 .score-pts {
+      font-size: 18px;
+      font-weight: 700;
+      color: #3b82f6;
+      min-width: 60px;
+      text-align: right;
+    }
+
+    /* SCENE 5 — CTA */
+    #s5 .cta-logo {
+      font-size: 90px;
+      font-weight: 900;
+      letter-spacing: -3px;
+      opacity: 0;
+      transform: scale(0.7);
+      transition: opacity 0.6s, transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    #s5 .cta-logo span {
+      color: #3b82f6;
+    }
+
+    #s5.active .cta-logo {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    #s5 .cta-sub {
+      font-size: 26px;
+      color: #94a3b8;
+      margin-top: 12px;
+      margin-bottom: 48px;
+      opacity: 0;
+      transition: opacity 0.5s 0.3s;
+    }
+
+    #s5.active .cta-sub {
+      opacity: 1;
+    }
+
+    #s5 .cta-badge {
+      background: #3b82f6;
+      color: #fff;
+      font-size: 22px;
+      font-weight: 700;
+      padding: 18px 48px;
+      border-radius: 100px;
+      letter-spacing: 1px;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.5s 0.5s, transform 0.5s 0.5s;
+    }
+
+    #s5.active .cta-badge {
+      opacity: 1;
+      transform: none;
+    }
+
+    #s5 .cta-features {
+      display: flex;
+      gap: 40px;
+      margin-top: 44px;
+      opacity: 0;
+      transition: opacity 0.5s 0.7s;
+    }
+
+    #s5.active .cta-features {
+      opacity: 1;
+    }
+
+    #s5 .feat {
+      text-align: center;
+    }
+
+    #s5 .feat-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    #s5 .feat-label {
+      font-size: 13px;
+      color: #64748b;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    /* TIMER RING SVG */
+    .ring-svg {
+      width: 80px;
+      height: 80px;
+      transform: rotate(-90deg);
+    }
+
+    .ring-bg {
+      fill: none;
+      stroke: #1e2435;
+      stroke-width: 6;
+    }
+
+    .ring-fg {
+      fill: none;
+      stroke: #3b82f6;
+      stroke-width: 6;
+      stroke-linecap: round;
+      stroke-dasharray: 220;
+      stroke-dashoffset: 0;
+    }
+
+    /* PARTICLE DOTS */
+    .particles {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    /* PROGRESS BAR */
+    .progress-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+      width: 0;
+      transition: width 0.4s ease;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="stage">
+
+    <div class="grid-bg"></div>
+    <canvas class="particles" id="particles"></canvas>
+
+    <!-- SCENE 1: Brand -->
+    <div class="scene" id="s1">
+      <div class="logo">QUIZ<span>ZA</span></div>
+      <div class="tagline">The multiplayer quiz game</div>
+    </div>
+
+    <!-- SCENE 2: Lobby -->
+    <div class="scene" id="s2">
+      <div class="room-card">
+        <div class="room-label">Room Code — Share with friends</div>
+        <div class="room-code">JYJ94</div>
+        <div class="divider"></div>
+        <div class="players-label">Players Joined</div>
+        <div class="player-list">
+          <div class="player">
+            <div class="avatar av-blue">V</div>
+            <span class="player-name">vaka</span>
+            <span class="host-badge">HOST</span>
+          </div>
+          <div class="player">
+            <div class="avatar av-purple">S</div>
+            <span class="player-name">skyler</span>
+          </div>
+          <div class="player">
+            <div class="avatar av-green">M</div>
+            <span class="player-name">max99</span>
+          </div>
+          <div class="player">
+            <div class="avatar av-rose">J</div>
+            <span class="player-name">jxnna</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCENE 3: Question -->
+    <div class="scene" id="s3">
+      <div class="q-wrap">
+        <div class="q-timer-ring">
+          <svg class="ring-svg" viewBox="0 0 80 80">
+            <circle class="ring-bg" cx="40" cy="40" r="35" />
+            <circle class="ring-fg" id="timerRing" cx="40" cy="40" r="35" />
+          </svg>
+        </div>
+        <div class="q-number">Question 3 of 10</div>
+        <div class="q-text">What is the capital city of Australia?</div>
+        <div class="answers">
+          <div class="ans" id="ansA"><span class="letter la">A</span>Sydney</div>
+          <div class="ans" id="ansB"><span class="letter lb">B</span>Canberra</div>
+          <div class="ans" id="ansC"><span class="letter lc">C</span>Melbourne</div>
+          <div class="ans" id="ansD"><span class="letter ld">D</span>Brisbane</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCENE 4: Scores -->
+    <div class="scene" id="s4">
+      <div class="score-wrap">
+        <div class="score-title">🏆 Leaderboard</div>
+        <div class="score-sub">After Round 3</div>
+        <div class="score-rows" id="scoreRows">
+          <div class="score-row">
+            <div class="rank gold">1</div>
+            <div class="avatar av-purple" style="width:36px;height:36px;flex-shrink:0">S</div>
+            <div class="s-name">skyler</div>
+            <div class="bar-wrap">
+              <div class="bar" id="b1" style="background:#3b82f6"></div>
+            </div>
+            <div class="score-pts">2,850</div>
+          </div>
+          <div class="score-row">
+            <div class="rank silver">2</div>
+            <div class="avatar av-blue" style="width:36px;height:36px;flex-shrink:0">V</div>
+            <div class="s-name">vaka</div>
+            <div class="bar-wrap">
+              <div class="bar" id="b2" style="background:#60a5fa"></div>
+            </div>
+            <div class="score-pts">2,640</div>
+          </div>
+          <div class="score-row">
+            <div class="rank bronze">3</div>
+            <div class="avatar av-rose" style="width:36px;height:36px;flex-shrink:0">J</div>
+            <div class="s-name">jxnna</div>
+            <div class="bar-wrap">
+              <div class="bar" id="b3" style="background:#a78bfa"></div>
+            </div>
+            <div class="score-pts">2,100</div>
+          </div>
+          <div class="score-row">
+            <div class="rank" style="color:#475569">4</div>
+            <div class="avatar av-green" style="width:36px;height:36px;flex-shrink:0">M</div>
+            <div class="s-name">max99</div>
+            <div class="bar-wrap">
+              <div class="bar" id="b4" style="background:#4ade80"></div>
+            </div>
+            <div class="score-pts">1,720</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCENE 5: CTA -->
+    <div class="scene" id="s5">
+      <div class="cta-logo">QUIZ<span>ZA</span></div>
+      <div class="cta-sub">Play free with your friends</div>
+      <div class="cta-badge">Start a Game Now</div>
+      <div class="cta-features">
+        <div class="feat">
+          <div class="feat-icon">⚡</div>
+          <div class="feat-label">Instant rooms</div>
+        </div>
+        <div class="feat">
+          <div class="feat-icon">🧠</div>
+          <div class="feat-label">AI questions</div>
+        </div>
+        <div class="feat">
+          <div class="feat-icon">🏆</div>
+          <div class="feat-label">Live scores</div>
+        </div>
+        <div class="feat">
+          <div class="feat-icon">📄</div>
+          <div class="feat-label">Upload your docs</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="progress-bar" id="progressBar"></div>
+
+    <script>
+      const scenes = ['s1', 's2', 's3', 's4', 's5'];
+      let current = -1;
+      let timers = [];
+
+      function clearTimers() { timers.forEach(clearTimeout); timers = []; }
+      function after(ms, fn) { const t = setTimeout(fn, ms); timers.push(t); return t; }
+
+      function showScene(idx) {
+        scenes.forEach((id, i) => {
+          const el = document.getElementById(id);
+          el.classList.toggle('active', i === idx);
+        });
+        current = idx;
+        const pct = ((idx + 1) / scenes.length) * 100;
+        document.getElementById('progressBar').style.width = pct + '%';
+      }
+
+      function startPromo() {
+        clearTimers();
+        document.getElementById('replayBtn')?.classList.remove('visible');
+        // Reset bars
+        ['b1', 'b2', 'b3', 'b4'].forEach(id => { document.getElementById(id).style.width = '0'; });
+        // Reset ring
+        document.getElementById('timerRing').style.strokeDashoffset = '0';
+        // Reset answer styles
+        ['ansA', 'ansB', 'ansC', 'ansD'].forEach(id => {
+          document.getElementById(id).classList.remove('correct', 'wrong');
+        });
+
+        showScene(0);
+
+        after(2800, () => showScene(1));
+
+        after(6500, () => {
+          showScene(2);
+        });
+
+        after(10000, () => {
+          showScene(3);
+          // Animate timer ring
+          const ring = document.getElementById('timerRing');
+          const circumference = 220;
+          let startTime = null;
+          const duration = 4500;
+          function animRing(ts) {
+            if (!startTime) startTime = ts;
+            const elapsed = ts - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            ring.style.strokeDashoffset = progress * circumference;
+            if (progress < 1) requestAnimationFrame(animRing);
+          }
+          requestAnimationFrame(animRing);
+          // Show answer result
+          after(3000, () => {
+            document.getElementById('ansA').classList.add('wrong');
+            document.getElementById('ansB').classList.add('correct');
+          });
+        });
+
+        after(15000, () => {
+          showScene(4);
+          after(600, () => {
+            document.getElementById('b1').style.width = '100%';
+            document.getElementById('b2').style.width = '93%';
+            document.getElementById('b3').style.width = '74%';
+            document.getElementById('b4').style.width = '60%';
+          });
+        });
+
+        after(20000, () => {
+          showScene(5);
+        });
+
+        after(25000, () => {
+          startPromo();
+        });
+      }
+
+      // Particles
+      const canvas = document.getElementById('particles');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 1080; canvas.height = 1080;
+      const dots = Array.from({ length: 55 }, () => ({
+        x: Math.random() * 1080,
+        y: Math.random() * 1080,
+        r: Math.random() * 2 + 0.5,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        a: Math.random() * 0.4 + 0.1
+      }));
+
+      function drawParticles() {
+        ctx.clearRect(0, 0, 1080, 1080);
+        dots.forEach(d => {
+          d.x += d.vx; d.y += d.vy;
+          if (d.x < 0) d.x = 1080; if (d.x > 1080) d.x = 0;
+          if (d.y < 0) d.y = 1080; if (d.y > 1080) d.y = 0;
+          ctx.beginPath();
+          ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(59,130,246,${d.a})`;
+          ctx.fill();
+        });
+        requestAnimationFrame(drawParticles);
+      }
+      drawParticles();
+
+      startPromo();
+
+      // ── Universal responsive scaling ──────────────────────────────────────────
+      // The design is fixed at 1080×1080. We scale it to fit any viewport
+      // while preserving perfect pixel layout inside the stage.
+      function scaleStage() {
+        const stage = document.getElementById('stage');
+        const scaleX = window.innerWidth / 1080;
+        const scaleY = window.innerHeight / 1080;
+        const scale = Math.min(scaleX, scaleY); // fit, never crop
+        stage.style.transform = `scale(${scale})`;
+      }
+      window.addEventListener('resize', scaleStage);
+      scaleStage(); // run once on load
+    </script>
+  </div><!-- /stage -->
+</body>
+
+</html>

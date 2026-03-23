@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -c src/config.js)",
+      "Bash(node -c src/httpServer.js)",
+      "Bash(node -c src/wsServer.js)",
+      "Bash(node -c src/messageHandler.js)",
+      "Bash(node -c src/roomHelpers.js)",
+      "Bash(node:*)"
+    ]
+  }
+}
