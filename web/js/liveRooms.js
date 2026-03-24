@@ -13,16 +13,31 @@ function renderLiveRooms(rooms) {
     return;
   }
 
-  list.innerHTML = rooms.map(r => `
-    <div class="live-room">
-      <span class="live-code">${sanitizeDisplay(r.code)}</span>
+  list.innerHTML = rooms.map(r => {
+    const code  = sanitizeDisplay(r.code);
+    const topic = sanitizeDisplay(r.topic);
+    return `
+    <div class="live-room" onclick="joinFromLiveRoom('${code}')" title="Click to join">
+      <span class="live-code">${code}</span>
       <div class="live-meta">
-        <div class="live-topic">${sanitizeDisplay(r.topic)}</div>
+        <div class="live-topic">${topic}</div>
         <div class="live-sub">Q${r.q} of ${r.total}</div>
       </div>
-      <div class="live-players"><strong>${r.players}</strong><br>players</div>
-    </div>
-  `).join('');
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+        <div class="live-players"><strong>${r.players}</strong> players</div>
+        <div class="live-join-hint">Join &rarr;</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/** Pre-fill the join form with the selected room code and switch to the join tab. */
+function joinFromLiveRoom(code) {
+  App.lobby.setTab('join');
+  const el = document.getElementById('j-code');
+  if (el) el.value = code;
+  const home = document.getElementById('screen-home');
+  if (home) home.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // Prevent XSS in server-sent display strings

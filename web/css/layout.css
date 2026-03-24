@@ -1,0 +1,61 @@
+/* ── Page layout: side-ads + centre content ────────────── */
+#page-layout {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 100vh;
+  gap: 16px;
+}
+
+.ad-col {
+  width: 160px;
+  min-width: 160px;
+  position: sticky;
+  top: 24px;
+  align-self: flex-start;
+  padding-top: 24px;
+}
+
+@media (max-width: 959px) {
+  .ad-col { display: none; }
+}
+
+/* ── Mobile bottom ad bar ── */
+#ad-bottom {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 150;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  text-align: center;
+  min-height: 50px;
+  max-height: 60px;
+  overflow: hidden;
+}
+
+@media (max-width: 959px) {
+  #ad-bottom { display: block; }
+}
+
+/* ── App column ── */
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px 40px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Screens ── */
+.screen { display: none; width: 100%; max-width: 500px; animation: fadeUp 0.3s ease; }
+.screen.wide { max-width: 680px; }
+.screen.active { display: block; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

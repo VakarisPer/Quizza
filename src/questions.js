@@ -26,19 +26,19 @@ const QuestionService = {
    * @param {number} count         Number of questions needed.
    * @returns {Promise<object[]>}
    */
-  async generate(topicContext, count) {
+  async generate(topicContext, count, difficulty = 'normal') {
     if (!Config.DEEPSEEK_API_KEY) {
       throw new Error('No API key configured — cannot generate questions.');
     }
 
     const contextChars = String(topicContext || '').slice(0, Config.LIMITS.AI_CONTEXT_CHARS);
-    log.info('AI', `Requesting ${count} questions from DeepSeek (context: ${contextChars.length} chars)`);
+    log.info('AI', `Requesting ${count} questions from DeepSeek (context: ${contextChars.length} chars, difficulty: ${difficulty})`);
 
     // Connectivity ping before the expensive request
     const pingOk = await this._ping();
     if (!pingOk) throw new Error('DeepSeek API is unreachable. Check your connection or API key.');
 
-    return this._fetchQuestions(contextChars, count);
+    return this._fetchQuestions(contextChars, count, difficulty);
   },
 
   // ── Private ────────────────────────────────────────────────────────────────
@@ -76,10 +76,15 @@ const QuestionService = {
   },
 
   /** Send the full question-generation request to DeepSeek. */
-  async _fetchQuestions(contextChars, count) {
+  async _fetchQuestions(contextChars, count, difficulty = 'normal') {
+    const difficultyClause =
+      difficulty === 'easy' ? 'Make questions straightforward and beginner-friendly.' :
+      difficulty === 'hard' ? 'Make questions challenging, requiring specific or advanced knowledge.' :
+                              'Make questions moderately challenging.';
+
     const userPrompt =
       `Generate ${count} multiple-choice quiz questions with 4 answer options ` +
-      `based on this material:\n\n${contextChars}\n\nReturn ONLY a JSON array.`;
+      `based on this material:\n\n${contextChars}\n\n${difficultyClause}\n\nReturn ONLY a JSON array.`;
 
     try {
       const res = await fetch(AI_URL, {

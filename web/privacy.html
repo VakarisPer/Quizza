@@ -3,14 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
   <title>Privacy Policy – Quizza</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+  <link rel="stylesheet" href="style.css?v=1.1.0">
   <style>
     .page-wrap { max-width: 560px; margin: 0 auto; padding: 40px 20px 60px; }
     .page-wrap p { font-size: 14px; line-height: 1.75; color: var(--muted); margin: 0 0 14px; }
     .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--accent); text-decoration: none; margin-bottom: 24px; }
     .back-link:hover { opacity: 0.8; }
   </style>
+  <script>
+    (function () {
+      var t = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
 </head>
 <body>
   <div class="page-wrap">
@@ -20,6 +29,8 @@
       <div class="card-title">Privacy Policy</div>
       <p>Quizza does not collect personal data beyond the display name you enter. No account or sign-up is required.</p>
       <p>Display names are used only within the game session and are not stored on our servers after the session ends.</p>
+      <p>Quiz questions are generated using the <strong>DeepSeek API</strong>. When you start a game, a request is sent to DeepSeek's servers to generate questions. No personal data is included in these requests.</p>
+      <p>If you upload a file (PDF, DOCX, PPTX, or TXT) to use as an AI question source, the file content is processed in memory to extract text and is <strong>never saved to disk</strong> or retained after the session ends.</p>
       <p>We use Google Analytics and Google AdSense on this site, which may set cookies and collect anonymous usage data in accordance with Google's privacy policies.</p>
       <p>By using Quizza you acknowledge this privacy policy.</p>
     </div>

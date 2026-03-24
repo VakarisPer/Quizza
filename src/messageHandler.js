@@ -33,7 +33,8 @@ const MessageHandler = {
     switch (action) {
       case 'create_room': return this._createRoom(ws, pid, msg);
       case 'join_room':   return this._joinRoom(ws, pid, msg);
-      case 'set_context': return this._setContext(ws, pid, msg, room, code);
+      case 'set_context':      return this._setContext(ws, pid, msg, room, code);
+      case 'update_settings':  return this._updateSettings(ws, pid, msg, room, code);
       case 'start_game':  return this._startGame(ws, pid, msg, room, code);
       case 'answer':      return this._answer(ws, pid, msg, room, code);
       case 'vote_skip':   return this._voteSkip(ws, pid, msg, room, code);
@@ -64,10 +65,15 @@ const MessageHandler = {
       currentQ:     0,
       qStartTime:   0,
       topicContext: '',
+      isPrivate:    msg.private === true,
       updatedAt:    Date.now(),
       config: {
         roundDuration:     Config.DEFAULTS.ROUND_DURATION,
         questionsPerGame:  Config.DEFAULTS.QUESTIONS_PER_GAME,
+      },
+      settings: {
+        maxPlayers: 0,
+        difficulty: 'normal',
       },
       _timerInterval: null,
       _revealTimeout: null,
@@ -98,6 +104,11 @@ const MessageHandler = {
       this._error(ws, 'That game has already started. Ask the host to start a new one.');
       return;
     }
+    if (room.settings?.maxPlayers > 0 && room.players.size >= room.settings.maxPlayers) {
+      log.warn('Room', `Join failed — room "${code}" is full (${room.players.size}/${room.settings.maxPlayers})`);
+      this._error(ws, 'Room is full. Ask the host to increase the player limit.');
+      return;
+    }
 
     const player = PlayerFactory.create(ws, pid, name);
     room.players.set(pid, player);
@@ -115,10 +126,29 @@ const MessageHandler = {
     if (!this._requireHost(ws, pid, room, code)) return;
 
     room.topicContext = String(msg.context || '').replace(/[<>"'&]/g, '').trim().slice(0, 2000);
-    log.info('Room', `${code} — AI context set by host (${room.topicContext.length} chars)`);
+
+    // Derive a short display topic from the instructions
+    const instMatch = room.topicContext.match(/Instructions:\s*(.+)/);
+    const rawTopic  = instMatch ? instMatch[1] : room.topicContext.split('\n')[0];
+    room.topic = rawTopic.trim().slice(0, 25) || 'Custom';
+
+    log.info('Room', `${code} — AI context set by host (${room.topicContext.length} chars), topic="${room.topic}"`);
 
     RoomHelpers.broadcast(room, { type: 'context_set', msg: 'AI source saved.' });
     RoomHelpers.broadcast(room, RoomHelpers.roomSnapshot(room));
+  },
+
+  _updateSettings(ws, pid, msg, room, code) {
+    if (!this._requireRoom(ws, pid, room)) return;
+    if (!this._requireHost(ws, pid, room, code)) return;
+
+    const maxPlayers = parseInt(msg.maxPlayers);
+    const difficulty = msg.difficulty;
+
+    room.settings.maxPlayers = Number.isFinite(maxPlayers) ? Math.max(0, maxPlayers) : 0;
+    room.settings.difficulty = ['easy', 'normal', 'hard'].includes(difficulty) ? difficulty : 'normal';
+
+    log.debug('Room', `${code} — settings updated: maxPlayers=${room.settings.maxPlayers}, difficulty=${room.settings.difficulty}`);
   },
 
   _startGame(ws, pid, msg, room, code) {

@@ -36,7 +36,7 @@ const GameLoop = {
     try {
       const COUNTDOWN_MS = 3000;
       [questions] = await Promise.all([
-        QuestionService.generate(room.topicContext, count),
+        QuestionService.generate(room.topicContext, count, room.settings?.difficulty || 'normal'),
         new Promise(r => setTimeout(r, COUNTDOWN_MS)),
       ]);
     } catch (err) {
@@ -74,8 +74,9 @@ const GameLoop = {
 
     log.info('Game', `Room ${room.code} — Q${room.currentQ + 1}/${room.questions.length}: "${q.q.slice(0, 60)}…"`);
 
-    room.qStartTime = Date.now();
-    room.skipVotes  = new Set();
+    room.qStartTime   = Date.now();
+    room.skipVotes    = new Set();
+    room.currentTopic = q.topic || '';
 
     // Reset answered flag for all players
     for (const p of room.players.values()) p.answered = false;

@@ -8,6 +8,7 @@ class LobbyController {
   constructor() {
     this._roomCode    = null;
     this._fileContext = '';  // extracted text from uploaded file
+    this._language    = 'english';  // AI question generation language
   }
 
   /** The current room code (null before a room is created/joined). */
@@ -31,7 +32,8 @@ class LobbyController {
     if (!name) { App.toast.show('Please enter your name', 'err'); return; }
     App.state.myName = name;
     App.state.isHost = true;
-    App.conn.send({ type: 'create_room', name });
+    const isPrivate = Utils.q('#c-private')?.checked || false;
+    App.conn.send({ type: 'create_room', name, private: isPrivate });
   }
 
   /** Validate name + code and ask the server to join. */
@@ -77,8 +79,10 @@ class LobbyController {
       App.toast.show('Upload a file or add instructions first', 'err');
       return;
     }
+    // DEBUG: Log language setting for AI context
+    console.log('[DEBUG] AI context language:', this._language);
     const context = [this._fileContext, instructions].filter(Boolean).join('\n\n---\nInstructions: ');
-    App.conn.send({ type: 'set_context', context });
+    App.conn.send({ type: 'set_context', context, language: this._language });
     Utils.q('#ctx-saved-notice').classList.remove('hidden');
     App.toast.show('AI source saved!', 'ok');
   }
@@ -98,6 +102,40 @@ class LobbyController {
   }
 
   // ── Game settings ─────────────────────────────────────────
+
+  /** Toggle visibility of custom language input field. */
+  toggleCustomLanguage() {
+    const select = Utils.q('#s-language');
+    const customInput = Utils.q('#s-language-custom');
+    if (select.value === 'other') {
+      customInput.classList.remove('hidden');
+      customInput.focus();
+    } else {
+      customInput.classList.add('hidden');
+      this.updateSettings();
+    }
+  }
+
+  /** Send updated room settings (max players, difficulty, language) to the server. */
+  updateSettings() {
+    const maxPlayers = parseInt(Utils.q('#s-maxplayers')?.value || '0');
+    const difficulty = Utils.q('#s-difficulty')?.value || 'normal';
+    const select = Utils.q('#s-language');
+    let language = select.value || 'english';
+    
+    // If "Other" is selected, use custom language input
+    if (language === 'other') {
+      const customInput = Utils.q('#s-language-custom').value.trim();
+      if (!customInput) {
+        App.toast.show('Please enter a language', 'err');
+        return;
+      }
+      language = customInput;
+    }
+    
+    this._language = language;
+    App.conn.send({ type: 'update_settings', maxPlayers, difficulty, language });
+  }
 
   /** Ask the server to start the game with the configured settings. */
   startGame() {
@@ -149,11 +187,34 @@ class LobbyController {
       const reader = new FileReader();
       reader.onload = (ev) => {
         const text = ev.target.result;
+        if (text === null || text === undefined) {
+          App.toast.show('Failed to read text file', 'err');
+          console.error('[DEBUG] Failed to extract text from:', file.name);
+          return;
+        }
         this._fileContext = text;
+        
+        // DEBUG: Log extracted text and save to localStorage for debugging
+        console.log('[DEBUG] Extracted text from file:', file.name);
+        console.log('[DEBUG] Text length:', text.length, 'bytes');
+        console.log('[DEBUG] First 200 chars:', text.substring(0, 200));
+        // Save to localStorage for debugging (browser storage)
+        try {
+          const debugKey = `debug_upload_${Date.now()}_${file.name}`;
+          localStorage.setItem(debugKey, text);
+          console.log('[DEBUG] Saved to localStorage with key:', debugKey);
+        } catch (e) {
+          console.warn('[DEBUG] Could not save to localStorage:', e.message);
+        }
+        
         const lbl = Utils.q('#file-label');
         lbl.textContent = `Loaded: ${file.name} (${Math.round(text.length / 1024 * 10) / 10} KB)`;
         lbl.classList.remove('hidden');
         App.toast.show('File loaded: ' + file.name, 'ok');
+      };
+      reader.onerror = () => {
+        App.toast.show('Failed to read file', 'err');
+        console.error('[DEBUG] FileReader error for:', file.name);
       };
       reader.readAsText(file);
     } else {
@@ -164,10 +225,20 @@ class LobbyController {
 
       const reader = new FileReader();
       reader.onload = (ev) => {
-        const bytes  = new Uint8Array(ev.target.result);
+        const arrayBuffer = ev.target.result;
+        if (!arrayBuffer) {
+          App.toast.show('Failed to read file', 'err');
+          lbl.classList.add('hidden');
+          return;
+        }
+        const bytes  = new Uint8Array(arrayBuffer);
         let binary   = '';
         for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
         App.conn.send({ type: 'upload_file', name: file.name, data: btoa(binary) });
+      };
+      reader.onerror = () => {
+        App.toast.show('Failed to read file', 'err');
+        lbl.classList.add('hidden');
       };
       reader.readAsArrayBuffer(file);
     }
@@ -176,6 +247,20 @@ class LobbyController {
   /** Store server-extracted file text (shown in upload zone, not in instructions textarea). */
   handleFileText(m) {
     this._fileContext = m.text;
+    
+    // DEBUG: Log extracted text from server-processed files (PDF/DOCX/PPTX)
+    console.log('[DEBUG] Received extracted text from server for:', m.name);
+    console.log('[DEBUG] Text length:', m.text.length, 'bytes');
+    console.log('[DEBUG] First 200 chars:', m.text.substring(0, 200));
+    // Save to localStorage for debugging (browser storage)
+    try {
+      const debugKey = `debug_extracted_${Date.now()}_${m.name}`;
+      localStorage.setItem(debugKey, m.text);
+      console.log('[DEBUG] Saved extracted text to localStorage with key:', debugKey);
+    } catch (e) {
+      console.warn('[DEBUG] Could not save to localStorage:', e.message);
+    }
+    
     const lbl = Utils.q('#file-label');
     lbl.textContent = `Extracted: ${m.name} (${Math.round(m.text.length / 1024 * 10) / 10} KB)`;
     lbl.classList.remove('hidden');

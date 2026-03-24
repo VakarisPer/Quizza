@@ -17,16 +17,17 @@
   <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
   <meta name="google-adsense-account" content="ca-pub-5650233313843112">
   <title>Quizza – Free Real-Time Multiplayer Quiz Game</title>
   <meta name="description"
     content="Host or join a live multiplayer quiz game instantly. No sign-up needed. Create a room, share the code, and play!" />
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=1.2.0">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5650233313843112"
-    crossorigin="anonymous">
-    </script>
+    crossorigin="anonymous"></script>
+  <!-- Apply saved theme before first paint to avoid flash -->
   <script>
     (function () {
       var t = localStorage.getItem('theme') || 'light';
@@ -37,12 +38,12 @@
 
 <body>
 
-  <!-- ── Countdown Overlay ────────────────────────────────── -->
+  <!-- ── Global UI (not screen-specific) ─────────────────── -->
+
+  <!-- Countdown overlay -->
   <div id="overlay-countdown">
     <div class="cd-num" id="cd-num">3</div>
     <div class="cd-label" id="cd-label">Get Ready</div>
-
-    <!-- shown after countdown finishes while questions are still generating -->
     <div class="cd-loading hidden" id="cd-loading">
       <div class="cd-spinner"></div>
       <div class="cd-loading-text">Generating questions…</div>
@@ -50,362 +51,45 @@
     </div>
   </div>
 
-  <!-- ── Theme toggle ─────────────────────────────────────── -->
+  <!-- Theme toggle -->
   <button type="button" id="theme-toggle" onclick="toggleTheme()" title="Toggle dark / light mode">
     <span id="theme-icon"></span>
   </button>
 
-  <!-- ── Toast ────────────────────────────────────────────── -->
+  <!-- Toast -->
   <div id="toast"></div>
 
-  <!-- ── Mobile bottom ad (hidden on desktop) ─────────────── -->
+  <!-- Mobile bottom ad -->
   <div id="ad-bottom">
-    <!-- AD SLOT: replace data-ad-client and data-ad-slot with real values -->
     <script>try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}</script>
   </div>
 
-  <!-- ── Page layout: side ads + content ──────────────────── -->
+  <!-- ── Page layout: side ads + content column ───────────── -->
   <div id="page-layout">
 
     <div class="ad-col" id="ad-left">
-      <!-- AD SLOT: replace data-ad-client and data-ad-slot with real values -->
       <script>try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}</script>
     </div>
 
-    <div id="app">
-
-      <!-- ══════════════════════════════════════
-       SCREEN: HOME
-  ══════════════════════════════════════ -->
-      <div class="screen active" id="screen-home">
-        <div style="text-align:center; padding-top:36px; margin-bottom:20px;">
-          <div class="logo">QUIZ<em>ZA</em></div>
-          <div class="tagline">Real-time multiplayer quiz game</div>
-        </div>
-
-        <!-- Banner ad (home screen only) -->
-        <div class="ad-banner-strip">
-          <!-- AD SLOT: replace data-ad-client and data-ad-slot with real values -->
-          <script>try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}</script>
-        </div>
-
-        <div class="card">
-          <div class="tabs">
-            <button type="button" class="tab-btn active" id="tab-create" onclick="App.lobby.setTab('create')">Create Room</button>
-            <button type="button" class="tab-btn" id="tab-join" onclick="App.lobby.setTab('join')">Join Room</button>
-          </div>
-
-          <!-- Create panel -->
-          <div id="panel-create">
-            <div class="field">
-              <label for="c-name">Your Name</label>
-              <input type="text" id="c-name" placeholder="Enter your name…" maxlength="20" autocomplete="off" spellcheck="false">
-            </div>
-            <button type="button" class="btn btn-primary btn-full btn-lg mt8" onclick="App.lobby.createRoom()">
-              Create Game Room
-            </button>
-            <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:10px;">
-              You'll get a room code to share with friends
-            </p>
-          </div>
-
-          <!-- Join panel -->
-          <div id="panel-join" style="display:none;">
-            <div class="field">
-              <label for="j-name">Your Name</label>
-              <input type="text" id="j-name" placeholder="Enter your name…" maxlength="20" autocomplete="off" spellcheck="false">
-            </div>
-            <div class="field mt12">
-              <label for="j-code">Room Code</label>
-              <input type="text" id="j-code" class="code-input" placeholder="XXXXX" maxlength="5" autocomplete="off" spellcheck="false" pattern="[A-Za-z0-9]{5}" inputmode="text">
-            </div>
-            <button type="button" class="btn btn-primary btn-full btn-lg mt8" onclick="App.lobby.joinRoom()">
-              Join Game
-            </button>
-          </div>
-        </div><!-- .card -->
-
-        <!-- ── Creators ──────────────────────────────────────────── -->
-        <div class="creators-wrap">
-          <div class="creator-card">
-            <div class="creator-avatar">VP</div>
-            <div class="creator-info">
-              <div class="creator-name">Vakaris Perliba</div>
-              <div class="creator-role">Co-creator &amp; Developer</div>
-            </div>
-          </div>
-          <div class="creator-card">
-            <div class="creator-avatar">VN</div>
-            <div class="creator-info">
-              <div class="creator-name">Vitas Novickas</div>
-              <div class="creator-role">Co-creator &amp; Developer</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── Live Rooms Feed ───────────────────────────────── -->
-        <div class="live-box">
-          <div class="live-header">
-            <div class="live-header-left">
-              <div class="live-dot"></div>
-              <span class="live-title">Live Rooms</span>
-            </div>
-            <span class="live-count" id="live-count">0 active</span>
-          </div>
-          <div class="live-scroll" id="live-list">
-            <div class="live-empty">No active rooms yet&hellip;</div>
-          </div>
-        </div>
-
-        <div class="conn-status">
-          <div class="conn-dot pending" id="conn-dot"></div>
-          <span id="conn-text">Connecting to server…</span>
-          <span id="active-players-text" style="margin-left:14px;color:var(--muted);font-size:13px;"></span>
-        </div>
-      </div><!-- #screen-home -->
-
-
-      <!-- ══════════════════════════════════════
-       SCREEN: LOBBY
-  ══════════════════════════════════════ -->
-      <div class="screen" id="screen-lobby">
-        <div class="topbar">
-          <div class="logo">Quiz<em style="color:var(--accent)">za</em></div>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="App.lobby.leaveRoom()">Leave Room</button>
-        </div>
-
-        <!-- Room code -->
-        <div class="card">
-          <div class="section-label" style="text-align:center;">Room Code — Share with friends</div>
-          <div class="room-code-big" id="lobby-code" onclick="App.lobby.copyCode()">-----</div>
-          <p class="code-copy-hint">Click to copy</p>
-          <div class="notice notice-info hidden mt12" id="lobby-notice"></div>
-        </div>
-
-        <!-- Players -->
-        <div class="card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-            <div class="card-title" style="margin:0;">Players</div>
-            <div id="player-count" style="font-size:18px;font-weight:800;color:var(--muted);">0</div>
-          </div>
-          <div class="players-list" id="players-list">
-            <div style="font-size:13px;color:var(--muted);text-align:center;padding:20px 0;">
-              Waiting for players…
-            </div>
-          </div>
-        </div>
-
-        <!-- HOST ONLY: settings + start -->
-        <div id="host-panel" style="display:none;">
-          <div class="card">
-            <div class="card-title">Game Settings</div>
-
-            <div class="field">
-              <div class="range-row">
-                <label style="margin:0;">Questions per game</label>
-                <div>
-                  <span class="range-val" id="v-questions">10</span>
-                  <span class="range-unit"> questions</span>
-                </div>
-              </div>
-              <input type="range" id="r-questions" min="5" max="20" value="10" step="1"
-                oninput="document.getElementById('v-questions').textContent = this.value">
-              <div class="range-hint"><span>5</span><span>20</span></div>
-            </div>
-
-            <div class="field">
-              <div class="range-row">
-                <label style="margin:0;">Seconds per question</label>
-                <div>
-                  <span class="range-val" id="v-timer">35</span>
-                  <span class="range-unit"> sec</span>
-                </div>
-              </div>
-              <input type="range" id="r-timer" min="10" max="60" value="35" step="5"
-                oninput="document.getElementById('v-timer').textContent = this.value">
-              <div class="range-hint"><span>10s</span><span>60s</span></div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-title">AI Question Source</div>
-            <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">
-              Optional — Upload a file and add specific instructions. The AI will generate quiz questions from your
-              content.
-            </p>
-
-            <div class="field">
-              <label>Upload File (.pdf .docx .pptx .txt)</label>
-              <div class="upload-zone" id="upload-zone"
-                ondragover="event.preventDefault(); this.classList.add('drag-over')"
-                ondragleave="this.classList.remove('drag-over')" ondrop="App.lobby.handleDrop(event)">
-                <input type="file" accept=".txt,.pdf,.docx,.pptx" id="file-input"
-                  onchange="App.lobby.handleFileSelect(event)">
-                <div class="upload-icon">↑</div>
-                <p>Drop a file here or click to browse (.pdf .docx .pptx .txt)</p>
-                <div class="upload-file-name hidden" id="file-label"></div>
-              </div>
-            </div>
-
-            <div class="field">
-              <label>Specific instructions</label>
-              <textarea id="ctx-text"
-                placeholder="e.g. Focus on key terms only, make questions challenging, avoid true/false…"></textarea>
-            </div>
-
-            <button type="button" class="btn btn-secondary btn-full" onclick="App.lobby.saveContext()">Save AI Source</button>
-            <div class="notice notice-ok hidden mt12" id="ctx-saved-notice">
-              AI source saved. Questions will be generated from your content.
-            </div>
-          </div>
-
-          <button type="button" class="btn btn-primary btn-full btn-lg" id="start-btn" onclick="App.lobby.startGame()">
-            Start Game
-          </button>
-          <p style="text-align:center;font-size:12px;color:var(--muted);margin-top:10px;">
-            Only you (the host) can start the game
-          </p>
-        </div><!-- #host-panel -->
-
-        <!-- PLAYER ONLY: waiting notice -->
-        <div id="player-wait" style="display:none;">
-          <div class="notice notice-info">
-            Waiting for the host to start the game…
-          </div>
-        </div>
-      </div><!-- #screen-lobby -->
-
-
-      <!-- ══════════════════════════════════════
-       SCREEN: GAME
-  ══════════════════════════════════════ -->
-      <div class="screen wide" id="screen-game">
-        <div class="q-topbar">
-          <div class="q-progress-text">
-            Q <span id="g-qnum">1</span> / <span id="g-qtotal">10</span>
-          </div>
-
-          <div class="timer-wrap">
-            <svg width="62" height="62" viewBox="0 0 62 62">
-              <circle cx="31" cy="31" r="26" fill="none" stroke="#e0e0e0" stroke-width="4" />
-              <circle id="timer-arc" cx="31" cy="31" r="26" fill="none" stroke="var(--accent)" stroke-width="4"
-                stroke-dasharray="163.4" stroke-dashoffset="0" stroke-linecap="round" />
-            </svg>
-            <div class="timer-num" id="timer-num">35</div>
-          </div>
-
-          <div class="q-topic-pill" id="g-topic">General</div>
-        </div>
-
-        <div class="card">
-          <div class="q-text" id="g-question">Loading question…</div>
-          <div class="options-grid" id="g-options"></div>
-        </div>
-
-        <div class="answered-status" id="g-answered"></div>
-
-        <div class="card mt12" id="game-lb-card" style="display:none;">
-          <div class="card-title">Standings</div>
-          <div id="game-lb"></div>
-        </div>
-      </div><!-- #screen-game -->
-
-
-      <!-- ══════════════════════════════════════
-       SCREEN: REVEAL
-  ══════════════════════════════════════ -->
-      <div class="screen wide" id="screen-reveal">
-        <div class="q-topbar">
-          <div class="q-progress-text">
-            Q <span id="rv-qnum">1</span> / <span id="rv-qtotal">10</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div class="next-q-line">Next in <span id="rv-next">10</span>s</div>
-            <button type="button" class="btn btn-ghost btn-sm" id="rv-skip-btn" onclick="App.game.voteSkip()">Skip (0/1)</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="result-hero">
-            <div class="result-verdict" id="rv-verdict">Correct!</div>
-            <div class="result-points-line mt8">Earned: <span id="rv-pts">+0</span></div>
-            <div class="result-points-line mt8">Your score: <span id="rv-total">0</span></div>
-            <div class="result-points-line mt8" id="rv-streak" style="color:#7c3aed;"></div>
-          </div>
-          <div class="explanation-box hidden" id="rv-explanation"></div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Leaderboard</div>
-          <div id="rv-lb"></div>
-        </div>
-      </div><!-- #screen-reveal -->
-
-
-      <!-- ══════════════════════════════════════
-       SCREEN: RESULTS
-  ══════════════════════════════════════ -->
-      <div class="screen wide" id="screen-results">
-        <div class="topbar">
-          <div class="logo">Quiz<em style="color:var(--accent)">za</em></div>
-        </div>
-
-        <div class="card">
-          <div class="card-title" style="text-align:center;">Game Over</div>
-          <div class="winner-section">
-            <div class="winner-crown-icon">★</div>
-            <div class="winner-lbl">Winner</div>
-            <div class="winner-nm" id="res-winner">—</div>
-            <div class="winner-pts" id="res-winner-pts"></div>
-          </div>
-        </div>
-
-        <!-- Banner ad (results screen) -->
-        <div class="ad-banner-strip">
-          <!-- AD SLOT: replace data-ad-client and data-ad-slot with real values -->
-          <script>try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}</script>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Final Scores</div>
-          <div id="res-lb"></div>
-        </div>
-
-        <div class="btn-group" id="res-actions"></div>
-      </div><!-- #screen-results -->
-
-      <!-- ── Footer ─────────────────────────────────────────── -->
-      <footer id="quizza-footer">
-        <div class="footer-top">
-          <div class="footer-logo">QUIZ<em>ZA</em></div>
-          <span class="footer-version">v1.0.0</span>
-        </div>
-        <div class="footer-links">
-          <a href="/privacy.html">Privacy Policy</a>
-          <a href="/terms.html">Terms of Service</a>
-          <a href="mailto:contact@quizza.gg">Contact</a>
-          <a href="#" onclick="reportBug(); return false;">Report a Bug</a>
-        </div>
-        <div class="footer-legal">
-          &copy; 2025 Quizza. Built by Vakaris Perliba &amp; Vitas Novickas.<br>
-          Questions are AI-generated for entertainment purposes only.
-          By playing you agree to our
-          <a href="/privacy.html">Privacy Policy</a> and
-          <a href="/terms.html">Terms of Service</a>.
-        </div>
-      </footer>
-
-    </div><!-- #app -->
+    <!-- #app is populated by templates.js before app modules run -->
+    <div id="app"></div>
 
     <div class="ad-col" id="ad-right">
-      <!-- AD SLOT: replace data-ad-client and data-ad-slot with real values -->
       <script>try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}</script>
     </div>
 
   </div><!-- #page-layout -->
 
 
-  <!-- ── JavaScript modules (load order matters) ──────────── -->
+  <!-- ── Screen templates (must load before app modules) ──── -->
+  <script src="js/ui/ScreenHome.js"></script>
+  <script src="js/ui/ScreenLobby.js"></script>
+  <script src="js/ui/ScreenGame.js"></script>
+  <script src="js/ui/ScreenReveal.js"></script>
+  <script src="js/ui/ScreenResults.js"></script>
+  <script src="js/templates.js"></script><!-- injects all screens into #app -->
+
+  <!-- ── App modules (load order matters) ─────────────────── -->
   <script src="js/utils.js"></script>
   <script src="js/state.js"></script>
   <script src="js/toast.js"></script>
@@ -421,6 +105,7 @@
   <script src="js/liveRooms.js"></script>
   <script src="js/app.js"></script>
 
+  <!-- ── Theme toggle helper ───────────────────────────────── -->
   <script>
     function toggleTheme() {
       var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
@@ -428,7 +113,6 @@
       document.getElementById('theme-icon').textContent = next === 'dark' ? '\u2600' : '\u263D';
       localStorage.setItem('theme', next);
     }
-    // Set initial icon to match saved theme
     document.getElementById('theme-icon').textContent =
       document.documentElement.getAttribute('data-theme') === 'dark' ? '\u2600' : '\u263D';
   </script>

@@ -9,10 +9,10 @@ const RoomStore = require('./roomStore');
 function getRoomsSummary(rooms) {
   const result = [];
   for (const r of rooms.values()) {
-    if (r.state === 'results' || r.state === 'ended') continue;
+    if (r.state === 'results' || r.state === 'ended' || r.isPrivate) continue;
     result.push({
       code:    r.code,
-      topic:   r.currentTopic || r.config?.topic || 'General',
+      topic:   r.currentTopic || r.topic || 'General',
       q:       r.currentQ || 0,
       total:   r.config?.questionsPerGame || 10,
       players: r.players.size,
