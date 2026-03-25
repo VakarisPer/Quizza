@@ -2,7 +2,7 @@
 
 Real-time multiplayer quiz game. A host creates a room, shares the code, players join, and the server runs a timed question-and-answer loop with live scoring.
 
-Optionally, the host can paste study notes or upload a `.txt` file and the server will call the DeepSeek API to generate questions from that content. Without an API key the game falls back to a built-in question bank.
+Optionally, the host can paste study notes or upload a `.txt .pptx .docx .pdf` file and the server will call the DeepSeek API to generate questions from that content. Without an API key the game falls back to a built-in question bank.
 
 currently running on  [Quiz App](https://www.quizza.online/)  (help from dashboard.render.com)
 

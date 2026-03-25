@@ -30,7 +30,10 @@ class WsServer {
    * @param {import('http').Server} httpServer  The existing HTTP server to upgrade.
    */
   constructor(httpServer) {
-    this._wss = new WebSocket.Server({ server: httpServer });
+    this._wss = new WebSocket.Server({ 
+      server: httpServer,
+      maxPayload: 100 * 1024 * 1024, // 100 MB max message size
+    });
     _wss = this._wss;
     this._wss.on('connection', (ws, req) => this._onConnection(ws, req));
   }
@@ -88,7 +91,7 @@ class WsServer {
 
     // ── Input validation ─────────────────────────────────────────────────────
     if (msg.name !== undefined) {
-      if (typeof msg.name !== 'string' || msg.name.length > 20) {
+      if (typeof msg.name !== 'string' || msg.name.length > 100) {
         log.warn('WS', `${pid} sent invalid name`);
         try { ws.send(JSON.stringify({ type: 'error', message: 'Invalid input' })); } catch { /**/ }
         return;

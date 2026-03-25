@@ -24,17 +24,18 @@ const Config = {
 
   /** Limits applied when validating host-submitted settings. */
   LIMITS: {
-    MAX_QUESTIONS:    50,
-    MIN_QUESTIONS:    1,
-    MAX_ROUND_SEC:    120,
-    MIN_ROUND_SEC:    5,
-    MAX_CONTEXT_CHARS: 8_000,
-    AI_CONTEXT_CHARS:  6_000,
-    AI_MAX_TOKENS:     4_000,
-    MAX_NAME_LEN:      20,
-    MAX_CHAT_LEN:      120,
-    MAX_AI_TOKENS_PING: 8,
-    MAX_FILE_BYTES:    5 * 1024 * 1024, // 5 MB file upload limit
+   MAX_QUESTIONS:     50,
+  MIN_QUESTIONS:      1,
+  MAX_ROUND_SEC:      120,
+  MIN_ROUND_SEC:      5,
+  MAX_CONTEXT_CHARS:  480_000,    // ~120K tokens, just under DeepSeek's 128K ceiling
+  AI_CONTEXT_CHARS:   380_000,    // Safe AI send limit (leaves room for system prompt)
+  AI_MAX_TOKENS:      8_000,      // deepseek-chat hard max output
+  MAX_NAME_LEN:       100,
+  MAX_CHAT_LEN:       120,
+  MAX_AI_TOKENS_PING: 8,
+  MAX_FILE_BYTES:     10 * 1024 * 1024,  // 10MB ← changed from 50MB
+  CHUNK_SIZE_CHARS:   380_000,    // Chunk files before sending to AI 
   },
 };
 
