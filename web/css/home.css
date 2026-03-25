@@ -138,6 +138,46 @@
 .creator-name { font-size:12px; font-weight:700; color:var(--text); }
 .creator-role { font-size:10px; color:var(--muted); margin-top:2px; }
 
+/* ── Donation Box ── */
+.donation-box {
+  margin: 20px auto;
+  max-width: 420px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+}
+
+.donation-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+.donation-desc {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+.btn-donate {
+  display: inline-block;
+  background: #ff5f5f;
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.btn-donate:hover {
+  opacity: 0.85;
+}
+
 /* ── Footer ── */
 #quizza-footer {
   width: 100%;

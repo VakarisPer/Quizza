@@ -92,6 +92,22 @@ class ScreenHome {
           </div>
         </div>
 
+        <!-- Donation Box -->
+        <div class="donation-box">
+          <div class="donation-title">☕ Support Quizza</div>
+          <div class="donation-desc">
+            We're two broke students — every coffee goes directly to server & AI API costs to keep the game free 🙏
+          </div>
+          <a 
+            href="https://ko-fi.com/quizza" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="btn btn-donate"
+          >
+            ☕ Buy us a coffee
+          </a>
+        </div>
+
         <div class="conn-status">
           <div class="conn-dot pending" id="conn-dot"></div>
           <span id="conn-text">Connecting to server…</span>
