@@ -122,7 +122,6 @@ class ScreenLobby {
                 placeholder="e.g. Focus on key terms only, make questions challenging, avoid true/false…"></textarea>
             </div>
 
-            <button type="button" class="btn btn-secondary btn-full" onclick="App.lobby.saveContext()">Save AI Source</button>
             <div class="notice notice-ok hidden mt12" id="ctx-saved-notice">
               AI source saved. Questions will be generated from your content.
             </div>

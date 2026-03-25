@@ -75,16 +75,11 @@ class LobbyController {
   /** Send the file content + specific instructions to the server. */
   saveContext() {
     const instructions = Utils.q('#ctx-text').value.trim();
-    if (!this._fileContext && !instructions) {
-      App.toast.show('Upload a file or add instructions first', 'err');
-      return;
-    }
-    // DEBUG: Log language setting for AI context
+    if (!this._fileContext && !instructions) return;
     console.log('[DEBUG] AI context language:', this._language);
     const context = [this._fileContext, instructions].filter(Boolean).join('\n\n---\nInstructions: ');
     App.conn.send({ type: 'set_context', context, language: this._language });
     Utils.q('#ctx-saved-notice').classList.remove('hidden');
-    App.toast.show('AI source saved!', 'ok');
   }
 
   /** Handle a drag-and-drop file onto the upload zone. */
@@ -139,6 +134,7 @@ class LobbyController {
 
   /** Ask the server to start the game with the configured settings. */
   startGame() {
+    this.saveContext();
     const questions = parseInt(Utils.q('#r-questions').value);
     const timer     = parseInt(Utils.q('#r-timer').value);
     App.conn.send({ type: 'start_game', questions, timer });
@@ -192,7 +188,7 @@ class LobbyController {
           console.error('[DEBUG] Failed to extract text from:', file.name);
           return;
         }
-        this._fileContext = text;
+        this._fileContext = text
         
         // DEBUG: Log extracted text and save to localStorage for debugging
         console.log('[DEBUG] Extracted text from file:', file.name);
@@ -265,5 +261,6 @@ class LobbyController {
     lbl.textContent = `Extracted: ${m.name} (${Math.round(m.text.length / 1024 * 10) / 10} KB)`;
     lbl.classList.remove('hidden');
     App.toast.show('Extracted: ' + m.name, 'ok');
+    this.saveContext();
   }
 }
