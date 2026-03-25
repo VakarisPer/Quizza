@@ -292,14 +292,14 @@ const MessageHandler = {
 
     if (!data) { this._error(ws, 'No file data received.'); return; }
 
-    const maxB64 = Math.ceil(Config.LIMITS.MAX_FILE_BYTES * 4 / 3);
-    if (data.length > maxB64) {
-      this._error(ws, 'File too large (max 5 MB).');
-      return;
-    }
-
     try {
       const buffer  = Buffer.from(data, 'base64');
+      
+      if (buffer.length > Config.LIMITS.MAX_FILE_BYTES) {
+        this._error(ws, `File too large (max ${Config.LIMITS.MAX_FILE_BYTES / (1024 * 1024)} MB).`);
+        return;
+      }
+
       const nameLow = name.toLowerCase();
       let text;
 

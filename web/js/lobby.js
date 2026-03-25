@@ -9,6 +9,7 @@ class LobbyController {
     this._roomCode    = null;
     this._fileContext = '';  // extracted text from uploaded file
     this._language    = 'english';  // AI question generation language
+    this._updateUploadHint();
   }
 
   /** The current room code (null before a room is created/joined). */
@@ -178,8 +179,9 @@ class LobbyController {
       App.toast.show('Supported: PDF, Word (.docx), PPTX, TXT', 'err');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      App.toast.show('File too large (max 5 MB)', 'err');
+    if (file.size > Config.LIMITS.MAX_FILE_BYTES) {
+      const mb = (Config.LIMITS.MAX_FILE_BYTES / (1024 * 1024)).toFixed(1);
+      App.toast.show(`File too large (max ${mb} MB)`, 'err');
       return;
     }
 
@@ -208,7 +210,11 @@ class LobbyController {
         }
         
         const lbl = Utils.q('#file-label');
-        lbl.textContent = `Loaded: ${file.name} (${Math.round(text.length / 1024 * 10) / 10} KB)`;
+        const sizeKB = text.length / 1024;
+        const displaySize = sizeKB > 1024 
+          ? `${(sizeKB / 1024).toFixed(1)} MB` // if over 1 MB, show in MB with one decimal
+          : `${sizeKB.toFixed(1)} KB`;
+        lbl.textContent = `Loaded: ${file.name} (${displaySize})`;
         lbl.classList.remove('hidden');
         App.toast.show('File loaded: ' + file.name, 'ok');
       };
@@ -244,6 +250,14 @@ class LobbyController {
     }
   }
 
+  /** Update UI hint for current file size limit (MB). */
+  _updateUploadHint() {
+    const mb = (Config.LIMITS.MAX_FILE_BYTES / (1024 * 1024)).toFixed(1);
+    const hint = `Drop a file here or click to browse (${mb} MB max) (.pdf .docx .pptx .txt)`;
+    const el   = Utils.q('#upload-zone-hint');
+    if (el) el.textContent = hint;
+  }
+
   /** Store server-extracted file text (shown in upload zone, not in instructions textarea). */
   handleFileText(m) {
     this._fileContext = m.text;
@@ -262,7 +276,11 @@ class LobbyController {
     }
     
     const lbl = Utils.q('#file-label');
-    lbl.textContent = `Extracted: ${m.name} (${Math.round(m.text.length / 1024 * 10) / 10} KB)`;
+    const sizeKB = m.text.length / 1024;
+    const displaySize = sizeKB > 1024 
+      ? `${(sizeKB / 1024).toFixed(1)} MB` 
+      : `${sizeKB.toFixed(1)} KB`;
+    lbl.textContent = `Extracted: ${m.name} (${displaySize})`;
     lbl.classList.remove('hidden');
     App.toast.show('Extracted: ' + m.name, 'ok');
   }

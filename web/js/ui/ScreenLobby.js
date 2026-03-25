@@ -111,9 +111,12 @@ class ScreenLobby {
                 <input type="file" accept=".txt,.pdf,.docx,.pptx" id="file-input"
                   onchange="App.lobby.handleFileSelect(event)">
                 <div class="upload-icon">↑</div>
-                <p>Drop a file here or click to browse (.pdf .docx .pptx .txt)</p>
+                <p id="upload-zone-hint">Drop a file here or click to browse (standard file limit)</p>
                 <div class="upload-file-name hidden" id="file-label"></div>
               </div>
+              <p id="file-size-hint" style="font-size:12px;color:var(--muted);margin-top:8px;">
+                The kb/mb size shown in green represents the character count of the uploaded file. NOT IMAGES. yet
+              </p>
             </div>
 
             <div class="field">
