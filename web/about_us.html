@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>About Us – Quizza</title>
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+  <link rel="stylesheet" href="style.css?v=1.1.0">
+  <style>
+    .page-wrap { max-width: 640px; margin: 0 auto; padding: 40px 20px 60px; }
+    .page-wrap p { font-size: 14px; line-height: 1.75; color: var(--muted); margin: 0 0 14px; }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--accent); text-decoration: none; margin-bottom: 24px; }
+    .back-link:hover { opacity: 0.8; }
+
+    .team-section { margin-top: 8px; }
+    .team-grid { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+    .team-card {
+      flex: 1 1 220px;
+      max-width: 260px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 20px 24px;
+      text-align: center;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .team-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+    }
+    .team-photo {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--accent);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      margin-bottom: 16px;
+    }
+    .team-name {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text);
+      margin: 0 0 4px;
+    }
+    .team-role {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 0 0 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .team-bio {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--muted);
+      margin: 0;
+    }
+  </style>
+  <script>
+    (function () {
+      var t = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+</head>
+<body>
+  <div class="page-wrap">
+    <a href="/" class="back-link">← Back to Quizza</a>
+
+    <div class="card">
+      <div class="card-title">About Us</div>
+      <p>Quizza is a real-time multiplayer quiz game created by Vakaris Perliba and Vitas Novickas. Our goal is to provide an engaging and educational experience for players of all ages.</p>
+      <p>We are two students passionate about technology and education, and we built Quizza to combine these interests into a fun and interactive platform.</p>
+      <p>Our team is committed to maintaining user privacy and ensuring a safe gaming environment. We do not collect personal data beyond the display name you enter, and no account or sign-up is required.</p>
+    </div>
+
+    <div class="card team-section">
+      <div class="card-title">Meet the Team</div>
+      <div class="team-grid">
+        <div class="team-card">
+          <img src="/Vakaris.jpeg" alt="Vakaris Perliba" class="team-photo">
+          <p class="team-name">Vakaris Perliba</p>
+          <p class="team-role">Developer</p>
+          <p class="team-bio">Passionate about technology and building interactive experiences.</p>
+        </div>
+        <div class="team-card">
+          <img src="/Vitas.jpeg" alt="Vitas Novickas" class="team-photo">
+          <p class="team-name">Vitas Novickas</p>
+          <p class="team-role">Developer</p>
+          <p class="team-bio">Driven by education and creating meaningful digital products.</p>
+        </div>
+      </div>
+    </div>
+
+    <footer id="quizza-footer" style="margin-top:32px;">
+      <div class="footer-links">
+        <a href="/">Home</a>
+        <a href="/terms.html">Terms of Service</a>
+        <a href="mailto:vakaris.tech@gmail.com">Contact</a>
+        <a href="/privacy.html">Privacy Policy</a>
+      </div>
+      <div class="footer-legal">&copy; 2025 Quizza. Built by Vakaris Perliba &amp; Vitas Novickas.</div>
+    </footer>
+  </div>
+</body>
+</html>

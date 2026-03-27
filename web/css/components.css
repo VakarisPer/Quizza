@@ -192,6 +192,33 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.5; }
 #sound-toggle { right: 64px; }
 #theme-toggle:hover, #sound-toggle:hover { background: var(--bg-alt); transform: scale(1.08); }
 
+/* ── Auth toggle (top bar, next to sound/theme) ── */
+#auth-toggle {
+  position: fixed;
+  top: 16px;
+  right: 112px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: #ffffff;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0 16px;
+  cursor: pointer;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  outline: none;
+  white-space: nowrap;
+}
+#auth-toggle:hover { background: var(--bg-alt); transform: scale(1.04); }
+
 /* ── Toast ── */
 #toast {
   position: fixed;

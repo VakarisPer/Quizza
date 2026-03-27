@@ -16,6 +16,7 @@ class Templates {
     const app = document.getElementById('app');
 
     app.innerHTML =
+      ScreenRegLog.html +
       ScreenHome.html +
       ScreenLobby.html +
       ScreenGame.html +
@@ -41,8 +42,9 @@ class Templates {
         <div class="footer-links">
           <a href="/privacy.html">Privacy Policy</a>
           <a href="/terms.html">Terms of Service</a>
-          <a href="mailto:contact@quizza.gg">Contact</a>
-          <a href="#" onclick="reportBug(); return false;">Report a Bug</a>
+          <a href="mailto:vakaris.tech@gmail.com">Contact</a>
+          <a href="mailto:vakaris.tech@gmail.com">Report a Bug</a>
+          <a href="/about_us.html">About us</a>
         </div>
         <div class="footer-legal">
           &copy; 2025 Quizza. Built by Vakaris Perliba &amp; Vitas Novickas.<br>

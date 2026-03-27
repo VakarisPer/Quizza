@@ -27,6 +27,7 @@
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
   <link rel="stylesheet" href="style.css?v=1.2.0">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- MathJax for rendering LaTeX formulas -->
   <script>
     MathJax = {
@@ -84,6 +85,11 @@
     <span id="sound-icon"></span>
   </button>
 
+  <!-- Auth toggle -->
+  <button type="button" id="auth-toggle" onclick="App.screens.show('screen-reglog')" title="Log In / Register" style="display:none;">
+    Log In / Register
+  </button>
+
   <!-- Toast -->
   <div id="toast"></div>
 
@@ -115,6 +121,7 @@
   <script src="js/ui/ScreenGame.js"></script>
   <script src="js/ui/ScreenReveal.js"></script>
   <script src="js/ui/ScreenResults.js"></script>
+  <script src="js/ui/ScreenRegLog.js"></script>
   <script src="js/templates.js"></script><!-- injects all screens into #app -->
 
   <!-- ── App modules (load order matters) ─────────────────── -->
