@@ -17,6 +17,7 @@
 }
 .password-toggle {
   position: absolute;
+  color:var(--text);
   right: 6px;
   background: none;
   border: none;
@@ -26,14 +27,14 @@
   opacity: 0.5;
   transition: opacity 0.15s;
 }
-.password-toggle:hover { opacity: 0.9; }
-.eye-icon { font-size: 18px; }
+.password-toggle:hover { opacity: 0.9;}
+.eye-icon { font-size: 18px;}
 
 /* Auth error box */
 .auth-error {
   background: rgba(239, 68, 68, 0.08);
   border: 1px solid rgba(239, 68, 68, 0.25);
-  color: #ef4444;
+  color: var(--error);
   font-size: 13px;
   font-weight: 600;
   padding: 10px 14px;
