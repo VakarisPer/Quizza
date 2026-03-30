@@ -28,7 +28,15 @@ class ScreenRegLog {
               <div class="password-wrap">
                 <input type="password" id="login-password" placeholder="Enter your password" autocomplete="current-password">
                 <button type="button" class="password-toggle" onclick="ScreenRegLog.togglePassword('login-password', this)" aria-label="Show password">
-                  <span class="eye-icon">&#128065;</span>
+                  <svg class="eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <svg class="eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                    <line x1="2" y1="2" x2="22" y2="22"/>
+                  </svg>
                 </button>
               </div>
             </div>
@@ -57,8 +65,16 @@ class ScreenRegLog {
               <label for="reg-password">Password</label>
               <div class="password-wrap">
                 <input type="password" id="reg-password" placeholder="At least 6 characters" autocomplete="new-password">
-                <button type="button" class="password-toggle" onclick="ScreenRegLog.togglePassword('reg-password', this)" aria-label="Show password">
-                  <span class="eye-icon">&#128065;</span>
+                <button type="button" class="password-toggle" onclick="ScreenRegLog.togglePassword('login-password', this)" aria-label="Show password">
+                  <svg class="eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <svg class="eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                    <line x1="2" y1="2" x2="22" y2="22"/>
+                  </svg>
                 </button>
               </div>
             </div>
@@ -66,8 +82,16 @@ class ScreenRegLog {
               <label for="reg-password2">Confirm Password</label>
               <div class="password-wrap">
                 <input type="password" id="reg-password2" placeholder="Re-enter your password" autocomplete="new-password">
-                <button type="button" class="password-toggle" onclick="ScreenRegLog.togglePassword('reg-password2', this)" aria-label="Show password">
-                  <span class="eye-icon">&#128065;</span>
+                <button type="button" class="password-toggle" onclick="ScreenRegLog.togglePassword('login-password', this)" aria-label="Show password">
+                  <svg class="eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <svg class="eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                    <line x1="2" y1="2" x2="22" y2="22"/>
+                  </svg>
                 </button>
               </div>
             </div>
@@ -105,10 +129,11 @@ class ScreenRegLog {
 
   /* ── Show / hide password ── */
   static togglePassword(inputId, btn) {
-    const inp = document.getElementById(inputId);
-    const show = inp.type === 'password';
-    inp.type = show ? 'text' : 'password';
-    btn.querySelector('.eye-icon').innerHTML = show ? '&#128064;' : '&#128065;';
+    const input = document.getElementById(inputId);
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    btn.querySelector('.eye-open').style.display = isHidden ? 'none' : '';
+    btn.querySelector('.eye-closed').style.display = isHidden ? '' : 'none';
   }
 
   /* ── Login (stub — wire to Supabase later) ── */
@@ -116,7 +141,6 @@ class ScreenRegLog {
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
     const errEl = document.getElementById('login-error');
-    errEl.classList.add('hidden');
 
     if (!email || !password) {
       errEl.textContent = 'Please fill in all fields.';
@@ -124,7 +148,7 @@ class ScreenRegLog {
       return;
     }
 
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    const { data: authData, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
     if (error) {
       errEl.textContent = error.message;
@@ -132,8 +156,13 @@ class ScreenRegLog {
       return;
     }
 
-    App.state.user = data.user;
-    App.toast.show('Welcome back, ' + data.user.user_metadata.username + '!', 'ok');
+    const username = authData.user.user_metadata.username;
+    App.state.user = authData.user;
+    document.getElementById('auth-toggle').textContent = username;
+    const cName = document.getElementById('c-name');
+    const jName = document.getElementById('j-name');
+    if (cName) cName.value = username;
+    if (jName) jName.value = username;
     App.screens.show('screen-home');
   }
 
@@ -177,4 +206,5 @@ class ScreenRegLog {
   App.toast.show('Account created! Check your email to confirm.', 'ok');
   ScreenRegLog.setTab('login');
   }
+  
 }
