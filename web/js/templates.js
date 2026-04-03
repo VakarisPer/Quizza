@@ -22,6 +22,7 @@ class Templates {
       ScreenGame.html +
       ScreenReveal.html +
       ScreenResults.html +
+      ScreenAccount.html +
       Templates._footerHtml;
 
     // Scripts inside innerHTML don't auto-execute, so push ad slots manually.

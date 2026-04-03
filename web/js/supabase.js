@@ -10,13 +10,7 @@ setTimeout(() => {
       const username = data.session.user.user_metadata.username;
       const btn = document.getElementById('auth-toggle');
       btn.textContent = username;
-      btn.onclick = async () => {
-        await supabaseClient.auth.signOut();
-        btn.textContent = 'Log In';
-        btn.onclick = () => App.screens.show('screen-reglog');
-        document.getElementById('c-name').value = '';
-        document.getElementById('j-name').value = '';
-      };
+      btn.onclick = () => ScreenAccount.show();
       document.getElementById('c-name').value = username;
       document.getElementById('j-name').value = username;
     }

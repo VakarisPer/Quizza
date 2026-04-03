@@ -158,7 +158,9 @@ class ScreenRegLog {
 
     const username = authData.user.user_metadata.username;
     App.state.user = authData.user;
-    document.getElementById('auth-toggle').textContent = username;
+    const btn = document.getElementById('auth-toggle');
+    btn.textContent = username;
+    btn.onclick = () => ScreenAccount.show();
     const cName = document.getElementById('c-name');
     const jName = document.getElementById('j-name');
     if (cName) cName.value = username;
