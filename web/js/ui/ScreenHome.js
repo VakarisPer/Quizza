@@ -111,7 +111,6 @@ class ScreenHome {
         <div class="conn-status">
           <div class="conn-dot pending" id="conn-dot"></div>
           <span id="conn-text">Connecting to server…</span>
-          <span id="active-players-text" style="margin-left:14px;color:var(--muted);font-size:13px;"></span>
         </div>
         <hr class="divider" style="margin:24px 0 0;">
       </div>`;

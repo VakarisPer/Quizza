@@ -150,7 +150,12 @@ class LobbyController {
     this.saveContext();
     const questions = parseInt(Utils.q('#r-questions').value);
     const timer     = parseInt(Utils.q('#r-timer').value);
-    App.conn.send({ type: 'start_game', questions, timer });
+    App.conn.send({ 
+      type: 'start_game', 
+      questions, 
+      timer,
+      questionMode: this._questionMode || 'multiple', // ← add this
+    });
   }
 
   // ── Panel visibility ──────────────────────────────────────
@@ -277,6 +282,20 @@ class LobbyController {
     lbl.classList.remove('hidden');
     App.toast.show('Extracted: ' + m.name, 'ok');
     this.saveContext();
+  }
+
+  setQuestionMode(mode) {
+    this._questionMode = mode;
+
+    // Update button styles
+    Utils.q('#mode-multiple').className = mode === 'multiple'
+      ? 'btn btn-primary btn-sm'
+      : 'btn btn-ghost btn-sm';
+    Utils.q('#mode-open').className = mode === 'open'
+      ? 'btn btn-primary btn-sm'
+      : 'btn btn-ghost btn-sm';
+
+    App.conn.send({ type: 'set_question_mode', mode });
   }
 
 }

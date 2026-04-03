@@ -82,6 +82,20 @@ class ScreenLobby {
             </div>
 
             <div class="field">
+              <label>Question Mode</label>
+              <div style="display:flex;gap:12px;margin-top:6px;">
+                <button type="button" id="mode-multiple" class="btn btn-primary btn-sm"
+                  onclick="App.lobby.setQuestionMode('multiple')">
+                  Multiple Choice
+                </button>
+                <button type="button" id="mode-open" class="btn btn-ghost btn-sm"
+                  onclick="App.lobby.setQuestionMode('open')">
+                  Open Questions
+                </button>
+              </div>
+            </div>
+
+            <div class="field">
               <label for="s-language">Language</label>
               <select id="s-language" onchange="App.lobby.updateSettings()">
                 <option value="english">English</option>

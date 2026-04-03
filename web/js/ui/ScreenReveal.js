@@ -22,6 +22,11 @@ class ScreenReveal {
           <div class="explanation-box hidden" id="rv-explanation"></div>
         </div>
 
+        <div class="card hidden" id="rv-open-answers">
+          <div class="card-title">Everyone's Answers</div>
+          <div id="rv-open-answers-list"></div>
+        </div>
+
         <div class="card">
           <div class="card-title">Leaderboard</div>
           <div id="rv-lb"></div>

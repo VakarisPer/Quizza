@@ -22,6 +22,18 @@ class ScreenGame {
         <div class="card">
           <div class="q-text" id="g-question">Loading question…</div>
           <div class="options-grid" id="g-options"></div>
+          <div id="g-open-answer" style="display:none;">
+            <div class="field" style="margin-top:16px;">
+              <input type="text" id="open-answer-input" 
+                placeholder="Type your answer…"
+                maxlength="200"
+                onkeydown="if(event.key==='Enter') App.game.submitOpenAnswer()">
+            </div>
+            <button type="button" class="btn btn-primary btn-full" 
+              onclick="App.game.submitOpenAnswer()">
+              Submit Answer
+            </button>
+          </div>
         </div>
 
         <div class="answered-status" id="g-answered"></div>

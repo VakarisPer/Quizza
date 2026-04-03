@@ -174,6 +174,118 @@ const QuestionService = {
     }
   },
 
+
+  async generateOpen(topicContext, count, difficulty = 'normal') {
+    if (!Config.DEEPSEEK_API_KEY) {
+      throw new Error('No API key configured — cannot generate questions.');
+    }
+
+    const contextChars = String(topicContext || '').slice(0, Config.LIMITS.AI_CONTEXT_CHARS);
+    log.info('AI', `Requesting ${count} OPEN questions from DeepSeek`);
+
+    const pingOk = await this._ping();
+    if (!pingOk) throw new Error('DeepSeek API is unreachable.');
+
+    return this._fetchOpenQuestions(contextChars, count, difficulty);
+  },
+
+  async _fetchOpenQuestions(contextChars, count, difficulty = 'normal') {
+    const difficultyClause =
+      difficulty === 'easy' ? 'Make questions straightforward and beginner-friendly.' :
+      difficulty === 'hard' ? 'Make questions challenging, requiring specific knowledge.' :
+                              'Make questions moderately challenging.';
+
+    const userPrompt =
+      `Generate ${count} open-ended quiz questions based on this material:\n\n${contextChars}\n\n${difficultyClause}\n\n` +
+      'Return ONLY a JSON array. Each element: {"q":"question","answer":"correct answer","topic":"topic","explanation":"explanation"}. ' +
+      'The answer must be concise — a word, name, number, or short phrase. Not a full sentence.';
+
+    try {
+      const res = await fetch(AI_URL, {
+        method: 'POST',
+        headers: this._headers(),
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            { role: 'system', content: 'You are a quiz question generator. Return ONLY a raw JSON array with no markdown fences or extra text. Each element: {"q":"question","answer":"correct answer","topic":"topic","explanation":"explanation"}.' },
+            { role: 'user', content: userPrompt },
+          ],
+          max_tokens: Config.LIMITS.AI_MAX_TOKENS,
+          temperature: 0.7,
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`AI request failed (HTTP ${res.status}).`);
+      }
+
+      const data = await res.json();
+      let raw = data.choices?.[0]?.message?.content || '';
+      raw = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+
+      const questions = JSON.parse(raw);
+
+      if (!Array.isArray(questions) || questions.length === 0) {
+        throw new Error('AI returned an invalid response.');
+      }
+
+      const validated = questions.filter((q, i) => {
+        if (!q.q || !q.answer) {
+          log.warn('AI', `Open question ${i} missing required fields, skipping`);
+          return false;
+        }
+        if (!q.explanation) q.explanation = 'No explanation provided.';
+        return true;
+      });
+
+      if (validated.length === 0) throw new Error('All open questions failed validation.');
+
+      log.info('AI', `Generated ${validated.length} open questions`);
+      return validated.slice(0, count);
+    } catch (err) {
+      log.error('AI', 'Open question generation failed:', err.message);
+      throw err instanceof SyntaxError
+        ? new Error('AI response could not be parsed. Try again.')
+        : err;
+    }
+  },
+
+  async gradeAnswer(question, correctAnswer, playerAnswer) {
+    if (!Config.DEEPSEEK_API_KEY) return false;
+
+    const prompt =
+      `Question: "${question}"\n` +
+      `Correct answer: "${correctAnswer}"\n` +
+      `Player answered: "${playerAnswer}"\n\n` +
+      'Reply with only "correct" or "wrong".\n' +
+      'Mark as correct if the answer contains the key facts, regardless of case or minor spelling.\n' +
+      'Mark as wrong if the answer is vague, indirect, or just describes the concept without naming it.';
+
+    try {
+      const res = await fetch(AI_URL, {
+        method: 'POST',
+        headers: this._headers(),
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            { role: 'system', content: 'You are a quiz answer grader. Reply with only "correct" or "wrong".' },
+            { role: 'user', content: prompt },
+          ],
+          max_tokens: 5,
+          temperature: 0,
+        }),
+      });
+
+      const data = await res.json();
+      const verdict = data.choices?.[0]?.message?.content?.trim().toLowerCase();
+      return verdict === 'correct';
+    } catch (err) {
+      log.error('AI', 'Grading failed:', err.message);
+      return false;
+    }
+  },
+
   _headers() {
     return {
       Authorization:  `Bearer ${Config.DEEPSEEK_API_KEY}`,

@@ -36,7 +36,9 @@ const GameLoop = {
     try {
       const COUNTDOWN_MS = 3000;
       [questions] = await Promise.all([
-        QuestionService.generate(room.topicContext, count, room.settings?.difficulty || 'normal'),
+        room.questionMode === 'open'
+          ? QuestionService.generateOpen(room.topicContext, count, room.settings?.difficulty || 'normal')
+          : QuestionService.generate(room.topicContext, count, room.settings?.difficulty || 'normal'),
         new Promise(r => setTimeout(r, COUNTDOWN_MS)),
       ]);
     } catch (err) {
@@ -53,6 +55,61 @@ const GameLoop = {
     room.currentQ  = 0;
     this._runQuestion(room);
     require('./wsServer').broadcastRoomsUpdate();
+  },
+
+  async submitOpenAnswer(room, pid, playerAnswer) {
+    const player = room.players.get(pid);
+    if (!player || player.answered || player.pendingAnswer) return;
+
+    // Mark as pending immediately to prevent duplicate submissions
+    // but don't set answered = true until grading is done
+    player.pendingAnswer = true;  // ← add this flag instead
+
+    const q = room.questions[room.currentQ];
+    const elapsed = (Date.now() - room.qStartTime) / 1000;
+    const dur = room.config.roundDuration;
+
+    // Grade via AI — await before marking answered
+    const isCorrect = await QuestionService.gradeAnswer(q.q, q.answer, playerAnswer);
+
+    player.answered = true;  // ← only set AFTER grading completes
+    player.openAnswer = playerAnswer;
+    player.lastCorrect = isCorrect;
+
+    if (isCorrect) {
+      const timeBonus = Math.round(400 * Math.max(0, (dur - elapsed) / dur));
+      player.streak = (player.streak || 0) + 1;
+      const streakBonus = Math.min(player.streak * 100, 500);
+      const points = 1000 + timeBonus + streakBonus;
+      player.score += points;
+
+      RoomHelpers.sendTo(room, pid, {
+        type: 'answer_result',
+        correct: true,
+        points,
+        score: player.score,
+      });
+    } else {
+      player.streak = 0;
+      RoomHelpers.sendTo(room, pid, {
+        type: 'answer_result',
+        correct: false,
+        points: 0,
+        score: player.score,
+      });
+    }
+
+    RoomHelpers.broadcast(room, {
+      type: 'player_answered',
+      count: Array.from(room.players.values()).filter(p => p.answered).length,
+      total: room.players.size,
+    });
+
+    const allAnswered = Array.from(room.players.values()).every(p => p.answered);
+    if (allAnswered) {
+      clearInterval(room._timerInterval);
+      this._revealAnswer(room);
+    }
   },
 
   // ── Private ────────────────────────────────────────────────────────────────
@@ -79,16 +136,20 @@ const GameLoop = {
     room.currentTopic = q.topic || '';
 
     // Reset answered flag for all players
-    for (const p of room.players.values()) p.answered = false;
+    for (const p of room.players.values()) {
+      p.answered = false;
+      p.pendingAnswer = false; // ← add this
+    }
 
     RoomHelpers.broadcast(room, {
       type:     'question',
       index:    room.currentQ,
       total:    room.questions.length,
       question: q.q,
-      options:  q.options,
+      options:  q.options || [],       
       topic:    q.topic || '',
       duration: dur,
+      mode:     room.questionMode || 'multiple', 
     });
     require('./wsServer').broadcastRoomsUpdate();
 
@@ -133,13 +194,18 @@ const GameLoop = {
       correct: p.lastCorrect,
       score:   p.score,
       streak:  p.streak,
+      openAnswer: p.openAnswer || null,
     }));
 
-    log.debug('Game', `Room ${room.code} — reveal Q${room.currentQ + 1}, correct: option ${correctIdx} (${q.options[correctIdx]})`);
+    const correctDisplay = room.questionMode === 'open'
+      ? q.answer
+      : (q.options?.[correctIdx] ?? correctIdx);
+    log.debug('Game', `Room ${room.code} — reveal Q${room.currentQ + 1}, correct: ${correctDisplay}`);
 
     RoomHelpers.broadcast(room, {
       type:          'reveal',
-      correct_index: correctIdx,
+      correct_index: room.questionMode === 'open' ? null : correctIdx,
+      correct_answer: room.questionMode === 'open' ? q.answer : null, // ← add
       explanation:   q.explanation || '',
       results,
       leaderboard:   RoomHelpers.leaderboard(room),

@@ -92,4 +92,37 @@ class GameRenderer {
     const count = players.length;
     Utils.q('#player-count').textContent = count + ' player' + (count !== 1 ? 's' : '');
   }
+
+  /**
+   * Render everyone's open answers during reveal.
+   * @param {object[]} results  Array of { name, openAnswer, correct, pid }.
+   * @param {string}   myPid   Current player's ID.
+   */
+  renderOpenAnswers(results, myPid) {
+    const container = Utils.q('#rv-open-answers');
+    const list      = Utils.q('#rv-open-answers-list');
+
+    const withAnswers = results.filter(r => r.openAnswer);
+
+    if (!withAnswers.length) {
+      container.classList.add('hidden');
+      return;
+    }
+
+    container.classList.remove('hidden');
+    list.innerHTML = withAnswers.map(r => `
+      <div class="lb-item ${r.pid === myPid ? 'lb-me' : ''}">
+        <div class="lb-name">
+          ${Utils.h(r.name)}
+          ${r.pid === myPid ? '<span style="color:var(--muted);font-size:11px;"> (you)</span>' : ''}
+        </div>
+        <div style="flex:1;padding:0 8px;font-size:14px;color:var(--muted);">
+          ${Utils.h(r.openAnswer || '—')}
+        </div>
+        <div style="font-weight:700;color:${r.correct ? 'var(--green)' : '#dc2626'};">
+          ${r.correct ? '✓' : '✗'}
+        </div>
+      </div>
+    `).join('');
+  }
 }

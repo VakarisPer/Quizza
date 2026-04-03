@@ -38,6 +38,8 @@ const MessageHandler = {
       case 'update_settings':  return this._updateSettings(ws, pid, msg, room, code);
       case 'start_game':  return this._startGame(ws, pid, msg, room, code);
       case 'answer':      return this._answer(ws, pid, msg, room, code);
+      case 'open_answer': return this._openAnswer(ws, pid, msg, room, code); 
+      case 'set_question_mode': return this._setQuestionMode(ws, pid, msg, room, code); 
       case 'vote_skip':   return this._voteSkip(ws, pid, msg, room, code);
       case 'upload_file': this._uploadFile(ws, pid, msg, room, code).catch(e => log.error('Upload', e.message)); return;
       case 'chat':        return this._chat(ws, pid, msg, room, code);
@@ -179,6 +181,8 @@ const MessageHandler = {
       : Config.DEFAULTS.ROUND_DURATION;
 
     log.info('Room', `${code} — configured: ${room.config.questionsPerGame} questions, ${room.config.roundDuration}s each`);
+    room.questionMode = msg.questionMode === 'open' ? 'open' : 'multiple';
+    log.info('Room', `${code} — configured: ${room.config.questionsPerGame} questions, ${room.config.roundDuration}s each, mode="${room.questionMode}"`);
     GameLoop.startGame(room);
     require('./wsServer').broadcastRoomsUpdate();
   },
@@ -397,6 +401,48 @@ const MessageHandler = {
   _sanitizeName(raw) {
     return sanitize(String(raw || 'Player')) || 'Player';
   },
+
+  _setQuestionMode(ws, pid, msg, room, code) {
+    if (!this._requireRoom(ws, pid, room)) return;
+    if (!this._requireHost(ws, pid, room, code)) return;
+
+    const mode = msg.mode === 'open' ? 'open' : 'multiple';
+    room.questionMode = mode;
+
+    log.info('Room', `${code} — question mode set to "${mode}" by host`);
+    RoomHelpers.broadcast(room, { type: 'question_mode_set', mode });
+  },
+
+  _openAnswer(ws, pid, msg, room, code) {
+    if (!this._requireRoom(ws, pid, room)) return;
+
+    const player = room.players.get(pid);
+    if (!player) return;
+    if (player.answered) {
+      log.debug('Game', `${code} — duplicate open answer from ${player.name}, ignored`);
+      return;
+    }
+    if (room.state !== 'playing') {
+      log.debug('Game', `${code} — open answer outside playing state, ignored`);
+      return;
+    }
+    if (room.questionMode !== 'open') {
+      log.warn('Game', `${code} — open_answer received but mode is not open`);
+      return;
+    }
+
+    const answer = String(msg.answer || '').trim().slice(0, 200);
+    if (!answer) {
+      this._error(ws, 'Answer cannot be empty.');
+      return;
+    }
+
+    log.debug('Game', `${code} — ${player.name} submitted open answer: "${answer}"`);
+    GameLoop.submitOpenAnswer(room, pid, answer).catch(err =>
+      log.error('Game', `${code} — open answer grading failed: ${err.message}`)
+    );
+  },
+
 };
 
 module.exports = MessageHandler;

@@ -36,12 +36,15 @@ class GameController {
    * @param {object} m  Server `question` message payload.
    */
   showQuestion(m) {
+    console.log('[DEBUG] question mode received:', m.mode);
+    console.log('[DEBUG] full message:', JSON.stringify(m));
     this.curAnswer  = null;
     this.lastResult = null;
     this.curQNum    = m.index + 1;
     this.stopRevealCountdown();
     this.totalQs    = m.total;
     this.qDuration  = m.duration;
+    this._questionMode = m.mode || 'multiple';
 
     Utils.q('#g-qnum').textContent     = this.curQNum;
     Utils.q('#g-qtotal').textContent   = this.totalQs;
@@ -49,7 +52,20 @@ class GameController {
     Utils.q('#g-question').innerHTML   = Utils.h(m.question);
     Utils.q('#g-answered').textContent = '';
 
-    App.renderer.renderOptions(m.options);
+    if (this._questionMode === 'open') {
+      console.log('[DEBUG] switching to open mode UI');
+      // Show open answer input, hide options
+      Utils.q('#g-options').style.display      = 'none';
+      Utils.q('#g-open-answer').style.display  = '';
+      Utils.q('#open-answer-input').value      = '';
+      Utils.q('#open-answer-input').disabled   = false;
+      Utils.q('#g-open-answer').querySelector('button').disabled = false;
+    } else {
+      // Show options, hide open answer input
+      Utils.q('#g-options').style.display      = '';
+      Utils.q('#g-open-answer').style.display  = 'none';
+      App.renderer.renderOptions(m.options);
+    }
     App.timer.start(m.duration);
     App.screens.show('screen-game');
 
@@ -57,6 +73,7 @@ class GameController {
     if (window.MathJax?.typesetPromise) {
       MathJax.typesetPromise([Utils.q('#g-question'), Utils.q('#g-options')]).catch(() => {});
     }
+    
   }
 
   // ── Answer selection ──────────────────────────────────────
@@ -76,6 +93,27 @@ class GameController {
     });
 
     App.conn.send({ type: 'answer', index: idx });
+  }
+
+  submitOpenAnswer() {
+    if (this.curAnswer !== null) return; // already submitted
+
+    const input = Utils.q('#open-answer-input');
+    const answer = input.value.trim();
+
+    if (!answer) {
+      App.toast.show('Please type an answer first', 'err');
+      return;
+    }
+
+    this.curAnswer = answer;
+
+    // Disable input and button so they can't resubmit
+    input.disabled = true;
+    Utils.q('#g-open-answer').querySelector('button').disabled = true;
+
+    App.conn.send({ type: 'open_answer', answer });
+    App.toast.show('Answer submitted!', 'ok');
   }
 
   /**
@@ -102,6 +140,12 @@ class GameController {
 
     this._renderVerdictSection();
     this._renderExplanation(m.explanation);
+
+    if (this._questionMode === 'open') {
+      App.renderer.renderOpenAnswers(m.results, App.state.myPid);
+    } else {
+      Utils.q('#rv-open-answers').classList.add('hidden');
+    }
 
     App.renderer.renderLeaderboard(m.leaderboard, 'rv-lb', App.state.myPid);
 
@@ -174,6 +218,13 @@ class GameController {
       totEl.textContent    = this.lastResult.score;
       streakEl.textContent = this.lastResult.streak > 1
         ? this.lastResult.streak + 'x Streak!' : '';
+    } else if (this._questionMode === 'open') {
+      // For open questions, result may still be grading
+      verdict.textContent  = 'Graded by AI';
+      verdict.className    = 'result-verdict';
+      ptsEl.textContent    = '…';
+      totEl.textContent    = '…';
+      streakEl.textContent = '';
     } else {
       verdict.textContent  = 'Time Up';
       verdict.className    = 'result-verdict v-wrong';
