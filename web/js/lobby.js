@@ -7,7 +7,6 @@
 class LobbyController {
   constructor() {
     this._roomCode    = null;
-    this._fileContext = '';  // extracted text from uploaded file
     this._language    = 'english';  // AI question generation language
   }
 
@@ -72,12 +71,10 @@ class LobbyController {
 
   // ── AI source ─────────────────────────────────────────────
 
-  /** Send the file content + specific instructions to the server. */
+  /** Send the textarea content as AI context to the server. */
   saveContext() {
-    const instructions = Utils.q('#ctx-text').value.trim();
-    if (!this._fileContext && !instructions) return;
-    console.log('[DEBUG] AI context language:', this._language);
-    const context = [this._fileContext, instructions].filter(Boolean).join('\n\n---\nInstructions: ');
+    const context = Utils.q('#ctx-text').value.trim();
+    if (!context) return;
     App.conn.send({ type: 'set_context', context, language: this._language });
     Utils.q('#ctx-saved-notice').classList.remove('hidden');
   }
@@ -85,7 +82,6 @@ class LobbyController {
   /** Handle a drag-and-drop file onto the upload zone. */
   handleDrop(e) {
     e.preventDefault();
-    Utils.q('#upload-zone').classList.remove('drag-over');
     const file = e.dataTransfer?.files?.[0];
     if (file) this._loadFile(file);
   }
@@ -184,104 +180,32 @@ class LobbyController {
   // ── Private ───────────────────────────────────────────────
 
   _loadFile(file) {
-    const name   = file.name.toLowerCase();
-    const isTxt  = name.endsWith('.txt');
-    const isServer = ['.pdf','.docx', '.pptx'].some(ext => name.endsWith(ext));
+    const nameEl = Utils.q('#fileName');
+    nameEl.textContent = `Uploading ${file.name}…`;
 
-    if (!isTxt && !isServer) {
-      App.toast.show('Supported: PDF, Word (.docx), PPTX, TXT', 'err');
-      return;
-    }
-    if (file.size > 50 * 1024 * 1024) {
-      App.toast.show('File too large (max 50 MB)', 'err');
-      return;
-    }
+    const form = new FormData();
+    form.append('file', file);
 
-    if (isTxt) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const text = ev.target.result;
-        if (text === null || text === undefined) {
-          App.toast.show('Failed to read text file', 'err');
-          console.error('[DEBUG] Failed to extract text from:', file.name);
-          return;
-        }
-        this._fileContext = text
-        
-        // DEBUG: Log extracted text and save to localStorage for debugging
-        console.log('[DEBUG] Extracted text from file:', file.name);
-        console.log('[DEBUG] Text length:', text.length, 'bytes');
-        console.log('[DEBUG] First 200 chars:', text.substring(0, 200));
-        // Save to localStorage for debugging (browser storage)
-        try {
-          const debugKey = `debug_upload_${Date.now()}_${file.name}`;
-          localStorage.setItem(debugKey, text);
-          console.log('[DEBUG] Saved to localStorage with key:', debugKey);
-        } catch (e) {
-          console.warn('[DEBUG] Could not save to localStorage:', e.message);
-        }
-        
-        const lbl = Utils.q('#file-label');
-        lbl.textContent = `Loaded: ${file.name} (${Math.round(text.length / 1024 * 10) / 10} KB)`;
-        lbl.classList.remove('hidden');
+    fetch('/api/upload', { method: 'POST', body: form })
+      .then(res => res.json().then(data => ({ ok: res.ok, data })))
+      .then(({ ok, data }) => {
+        if (!ok) throw new Error(data.error || 'Upload failed');
+
+        const textarea = Utils.q('#ctx-text');
+        textarea.value = textarea.value
+          ? textarea.value + '\n\n' + data.text
+          : data.text;
+        nameEl.textContent = `✓ ${file.name} loaded`;
         App.toast.show('File loaded: ' + file.name, 'ok');
-      };
-      reader.onerror = () => {
-        App.toast.show('Failed to read file', 'err');
-        console.error('[DEBUG] FileReader error for:', file.name);
-      };
-      reader.readAsText(file);
-    } 
-    else 
-    {
-      // pdf / DOCX / PPTX — send to server for extraction
-      const lbl = Utils.q('#file-label');
-      lbl.textContent = 'Extracting ' + file.name + '…';
-      lbl.classList.remove('hidden');
+      })
+      .catch(err => {
+        nameEl.textContent = `✗ ${err.message}`;
+        App.toast.show(err.message, 'err');
+      });
 
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const arrayBuffer = ev.target.result;
-        if (!arrayBuffer) {
-          App.toast.show('Failed to read file', 'err');
-          lbl.classList.add('hidden');
-          return;
-        }
-        const bytes  = new Uint8Array(arrayBuffer);
-        let binary   = '';
-        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-        App.conn.send({ type: 'upload_file', name: file.name, data: btoa(binary) });
-      };
-      reader.onerror = () => {
-        App.toast.show('Failed to read file', 'err');
-        lbl.classList.add('hidden');
-      };
-      reader.readAsArrayBuffer(file);
-    }
-  }
-
-  /** Store server-extracted file text (shown in upload zone, not in instructions textarea). */
-  handleFileText(m) {
-    this._fileContext = m.text;
-    
-    // DEBUG: Log extracted text from server-processed files (PDF/DOCX/PPTX)
-    console.log('[DEBUG] Received extracted text from server for:', m.name);
-    console.log('[DEBUG] Text length:', m.text.length, 'bytes');
-    console.log('[DEBUG] First 200 chars:', m.text.substring(0, 200));
-    // Save to localStorage for debugging (browser storage)
-    try {
-      const debugKey = `debug_extracted_${Date.now()}_${m.name}`;
-      localStorage.setItem(debugKey, m.text);
-      console.log('[DEBUG] Saved extracted text to localStorage with key:', debugKey);
-    } catch (e) {
-      console.warn('[DEBUG] Could not save to localStorage:', e.message);
-    }
-    
-    const lbl = Utils.q('#file-label');
-    lbl.textContent = `Extracted: ${m.name} (${Math.round(m.text.length / 1024 * 10) / 10} KB)`;
-    lbl.classList.remove('hidden');
-    App.toast.show('Extracted: ' + m.name, 'ok');
-    this.saveContext();
+    // Reset input so the same file can be re-selected
+    const input = Utils.q('#fileInput');
+    if (input) input.value = '';
   }
 
   setQuestionMode(mode) {

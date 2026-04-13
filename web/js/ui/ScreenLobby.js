@@ -118,25 +118,16 @@ class ScreenLobby {
             </p>
 
             <div class="field">
-              <label for="file-input">Upload File (.pdf .docx .pptx .txt)</label>
-              <div class="upload-zone" id="upload-zone"
-                ondragover="event.preventDefault(); this.classList.add('drag-over')"
-                ondragleave="this.classList.remove('drag-over')" ondrop="App.lobby.handleDrop(event)">
-                <input type="file" accept=".txt,.pdf,.docx,.pptx" id="file-input"
-                  onchange="App.lobby.handleFileSelect(event)">
-                <div class="upload-icon">↑</div>
-                <p id="upload-zone-hint">Drop a file here or click to browse (max size 50 MB)</p>
-                <div class="upload-file-name hidden" id="file-label"></div>
-              </div>
-              <p id="file-size-hint" style="font-size:12px;color:var(--muted);margin-top:8px;">
-                The kb/mb size shown in green represents the character count of the uploaded file. NOT IMAGES. yet
-              </p>
-            </div>
-
-            <div class="field">
               <label for="ctx-text">Specific instructions</label>
               <textarea id="ctx-text"
                 placeholder="e.g. Focus on key terms only, make questions challenging, avoid true/false…"></textarea>
+              <div class="upload-area">
+                <label class="upload-label">
+                  📎 Upload file
+                  <input type="file" id="fileInput" accept=".txt,.md,.csv,.json,.pdf,.doc,.docx,.xlsx,.pptx,.html,.xml">
+                </label>
+                <span class="upload-name" id="fileName"></span>
+              </div>
             </div>
 
             <div class="notice notice-ok hidden mt12" id="ctx-saved-notice">

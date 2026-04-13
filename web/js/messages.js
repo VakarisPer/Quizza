@@ -106,10 +106,6 @@ class MessageHandler {
         Utils.q('#game-lb-card').style.display = 'none';
         break;
 
-      case 'file_text':
-        App.lobby.handleFileText(m);
-        break;
-
       // ── Errors ────────────────────────────────────────────
       case 'game_error':
         App.countdown.hide();

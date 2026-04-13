@@ -10,8 +10,17 @@ const AI_URL = 'https://api.deepseek.com/v1/chat/completions';
 const SYSTEM_PROMPT =
   'You are a quiz question generator for students who are learning. ' +
   'Return ONLY a raw JSON array with no markdown fences or extra text. ' +
-  'Each element: {"q":"question","options":["A","B","C","D"],"correct":0,"topic":"topic","explanation":"explanation"}. ' +
+  'Each element: {"q":"question","options":["option1","option2","option3","option4"],"correct":0,"topic":"topic","explanation":"explanation"}. ' +
   '"correct" is the 0-based index of the correct option. Generate varied, clear questions. ' +
+  'OPTION FORMAT RULES (CRITICAL): ' +
+  '1. Each option must contain ONLY the answer text itself. ' +
+  '2. NEVER prefix options with letters like "A)", "B)", "A.", "B.", "a)", "b)" or any label. The UI adds labels automatically. ' +
+  '3. Good: ["Paris","London","Berlin","Rome"]. Bad: ["A) Paris","B) London","C) Berlin","D) Rome"]. ' +
+  'CONTENT FALLBACK RULES: ' +
+  '1. If the provided material is garbled, unreadable, corrupt, too short, or does not make sense, DO NOT refuse or return an error. ' +
+  '2. Instead, identify the most likely TOPIC or SUBJECT from whatever clues are available (title, keywords, partial sentences). ' +
+  '3. Then generate high-quality questions on that topic using your own knowledge. ' +
+  '4. If absolutely no topic can be inferred, generate general knowledge questions and set topic to "General Knowledge". ' +
   'MATH FORMATTING RULES: ' +
   '1. Wrap ALL inline math expressions with \\( and \\), e.g. \\(x^2 + 1\\). ' +
   '2. Wrap display/block equations with \\[ and \\], e.g. \\[\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}\\]. ' +
@@ -95,8 +104,11 @@ const QuestionService = {
     const userPrompt =
       `Generate ${count} multiple-choice quiz questions with 4 answer options ` +
       `based on this material:\n\n${contextChars}\n\n${difficultyClause}\n\n${languageClause}\n\n` +
-      'IMPORTANT: Use LaTeX notation (with \\( \\) for inline and \\[ \\] for display math) for ALL mathematical expressions in questions, options, and explanations.(if its not mathematical, do not use LaTeX, and generate question based on the context) ' +
-      'Each explanation must teach the concept — explain symbols, show steps, and state why the answer is correct. ' +
+      'CRITICAL FORMAT RULES:\n' +
+      '1. Each option must be ONLY the answer text. NEVER add letter prefixes like "A)", "B.", etc. The app UI adds A/B/C/D automatically.\n' +
+      '2. If the provided material is unreadable, garbled, or does not make sense, still generate questions — use your own knowledge about the topic you can infer from the material. Never refuse.\n' +
+      '3. Use LaTeX notation (\\( \\) for inline, \\[ \\] for display) for ALL math expressions in questions, options, and explanations.\n' +
+      '4. Each explanation must teach the concept — explain symbols, show steps, and state why the answer is correct.\n' +
       'Return ONLY a JSON array.';
 
     try {
@@ -153,6 +165,10 @@ const QuestionService = {
           log.warn('AI', `Question ${i} has invalid correct index, skipping`);
           return false;
         }
+        // Strip letter prefixes (e.g. "A) ", "B. ", "C: ") the AI may add despite instructions
+        q.options = q.options.map(opt =>
+          String(opt).replace(/^[A-Da-d][).:;\-]\s*/, '')
+        );
         // Ensure explanation exists
         if (!q.explanation) {
           q.explanation = 'No explanation provided.';
@@ -201,8 +217,10 @@ const QuestionService = {
 
     const userPrompt =
       `Generate ${count} open-ended quiz questions based on this material:\n\n${contextChars}\n\n${difficultyClause}\n\n${languageClause}\n\n` +
-      'Return ONLY a JSON array. Each element: {"q":"question","answer":"correct answer","topic":"topic","explanation":"explanation"}. ' +
-      'The answer must be concise — a word, name, number, or short phrase. Not a full sentence.';
+      'CRITICAL RULES:\n' +
+      '1. If the provided material is unreadable, garbled, or does not make sense, still generate questions — use your own knowledge about the topic you can infer from the material. Never refuse.\n' +
+      '2. The answer must be concise — a word, name, number, or short phrase. Not a full sentence.\n' +
+      'Return ONLY a JSON array. Each element: {"q":"question","answer":"correct answer","topic":"topic","explanation":"explanation"}.';
 
     try {
       const res = await fetch(AI_URL, {
@@ -211,7 +229,7 @@ const QuestionService = {
         body: JSON.stringify({
           model: 'deepseek-chat',
           messages: [
-            { role: 'system', content: 'You are a quiz question generator. Return ONLY a raw JSON array with no markdown fences or extra text. Each element: {"q":"question","answer":"correct answer","topic":"topic","explanation":"explanation"}.' },
+            { role: 'system', content: 'You are a quiz question generator. Return ONLY a raw JSON array with no markdown fences or extra text. Each element: {"q":"question","answer":"correct answer","topic":"topic","explanation":"explanation"}. If the provided material is unreadable or garbled, infer the topic and generate questions using your own knowledge. Never refuse.' },
             { role: 'user', content: userPrompt },
           ],
           max_tokens: Config.LIMITS.AI_MAX_TOKENS,

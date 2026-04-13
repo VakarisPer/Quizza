@@ -3,83 +3,94 @@
 const http      = require('http');
 const path      = require('path');
 const fs        = require('fs');
+const express   = require('express');
+const multer    = require('multer');
 const log       = require('./logger');
 const RoomStore = require('./roomStore');
 
-const MIME = {
-  '.html': 'text/html',
-  '.css':  'text/css',
-  '.js':   'application/javascript',
-  '.json': 'application/json',
-  '.png':  'image/png',
-  '.jpg':  'image/jpeg',
-  '.ico':  'image/x-icon',
-  '.svg':  'image/svg+xml',
-  '.wav':  'audio/wav',
-  '.mp3':  'audio/mpeg',
-  '.ogg':  'audio/ogg',
-  '.xml':  'application/xml',
-  '.txt':  'text/plain',
-};
+// ── File upload setup ────────────────────────────────────────────────────────
+
+const uploadsDir = path.join(__dirname, '..', 'uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
+
+const upload = multer({
+  dest: uploadsDir,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter(_req, file, cb) {
+    const allowed = /\.(txt|md|csv|json|pdf|doc|docx|xlsx|pptx|html|xml)$/i;
+    if (allowed.test(path.extname(file.originalname))) {
+      cb(null, true);
+    } else {
+      cb(new Error('File type not allowed.'));
+    }
+  },
+});
+
+let _markitdown;
+async function getMarkItDown() {
+  if (!_markitdown) {
+    const { MarkItDown } = await import('markitdown-ts');
+    _markitdown = new MarkItDown();
+  }
+  return _markitdown;
+}
 
 /**
- * HttpServer — serves static files from the `web/` directory.
- * The underlying `http.Server` is also used as the WebSocket upgrade target.
+ * HttpServer — Express-based server that serves static files from `web/`
+ * and provides API endpoints. The underlying `http.Server` is also used
+ * as the WebSocket upgrade target.
  */
 class HttpServer {
   constructor() {
-    /** Resolved path to the public web directory. */
-    this.publicDir = path.join(__dirname, '..', 'web');
+    const publicDir = path.join(__dirname, '..', 'web');
+    const app = express();
+
+    // Security headers
+    app.use((_req, res, next) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
+      res.setHeader('X-XSS-Protection', '1; mode=block');
+      res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+      res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+      next();
+    });
+
+    // Static files
+    app.use(express.static(publicDir));
+
+    // ── API routes ───────────────────────────────────────────────────────────
+
+    app.get('/api/stats', (_req, res) => {
+      res.json({ activePlayers: RoomStore.pidToRoom.size });
+    });
+
+    app.post('/api/upload', upload.single('file'), async (req, res) => {
+      if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+      const filePath = req.file.path;
+      const ext = path.extname(req.file.originalname).toLowerCase();
+
+      try {
+        let text;
+        if (['.txt', '.md', '.csv', '.json', '.xml'].includes(ext)) {
+          text = fs.readFileSync(filePath, 'utf-8');
+        } else {
+          const mid = await getMarkItDown();
+          const buf = fs.readFileSync(filePath);
+          const result = await mid.convertBuffer(buf, { file_extension: ext });
+          text = result?.markdown || result?.text_content || '';
+        }
+        fs.unlinkSync(filePath);
+        res.json({ ok: true, text });
+      } catch (err) {
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        log.error('Upload', `Failed: ${err.message}`);
+        res.status(500).json({ error: 'Could not read uploaded file' });
+      }
+    });
 
     /** The raw Node http.Server instance (passed to ws.Server). */
-    this.server = http.createServer((req, res) => this._handle(req, res));
-  }
-
-  // ── Private ────────────────────────────────────────────────────────────────
-
-  _handle(req, res) {
-    // Security headers
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-
-    // Stats API
-    if (req.url === '/api/stats') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ activePlayers: RoomStore.pidToRoom.size }));
-      return;
-    }
-
-    // Normalise URL
-    let urlPath = req.url === '/' ? '/index.html' : req.url;
-    urlPath = urlPath.split('?')[0];
-
-    const filePath = path.join(this.publicDir, urlPath);
-
-    // Prevent path traversal
-    if (!filePath.startsWith(this.publicDir)) {
-      log.warn('HTTP', `Path traversal attempt: ${req.url}`);
-      res.writeHead(403);
-      res.end('Forbidden');
-      return;
-    }
-
-    const ext  = path.extname(filePath);
-    const mime = MIME[ext] || 'application/octet-stream';
-
-    fs.readFile(filePath, (err, data) => {
-      if (err) {
-        log.debug('HTTP', `404: ${urlPath}`);
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('Not found');
-        return;
-      }
-      log.debug('HTTP', `200: ${urlPath}`);
-      res.writeHead(200, { 'Content-Type': mime });
-      res.end(data);
-    });
+    this.server = http.createServer(app);
   }
 }
 

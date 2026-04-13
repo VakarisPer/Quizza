@@ -7,7 +7,6 @@ const PlayerFactory = require('./player');
 const RoomStore     = require('./roomStore');
 const RoomHelpers   = require('./roomHelpers');
 const GameLoop      = require('./gameLoop');
-const mathParser      = require('./mathParser');
 
 const sanitize = s => String(s).replace(/[<>"'&]/g, '').trim().slice(0, 20);
 
@@ -41,7 +40,6 @@ const MessageHandler = {
       case 'open_answer': return this._openAnswer(ws, pid, msg, room, code); 
       case 'set_question_mode': return this._setQuestionMode(ws, pid, msg, room, code); 
       case 'vote_skip':   return this._voteSkip(ws, pid, msg, room, code);
-      case 'upload_file': this._uploadFile(ws, pid, msg, room, code).catch(e => log.error('Upload', e.message)); return;
       case 'chat':        return this._chat(ws, pid, msg, room, code);
       case 'play_again':  return this._playAgain(ws, pid, msg, room, code);
       case 'leave_room':  return this._leaveRoom(ws, pid, room, code);
@@ -187,6 +185,14 @@ const MessageHandler = {
     log.info('Room', `${code} — configured: ${room.config.questionsPerGame} questions, ${room.config.roundDuration}s each`);
     room.questionMode = msg.questionMode === 'open' ? 'open' : 'multiple';
     log.info('Room', `${code} — configured: ${room.config.questionsPerGame} questions, ${room.config.roundDuration}s each, mode="${room.questionMode}"`);
+
+    // If no context at all, abort and return everyone to lobby
+    if (!room.topicContext || !room.topicContext.trim()) {
+      log.warn('Room', `${code} — no topic context set, cannot start game`);
+      this._error(ws, 'No content provided. Upload a file or type instructions before starting.');
+      return;
+    }
+
     GameLoop.startGame(room);
     require('./wsServer').broadcastRoomsUpdate();
   },
@@ -289,62 +295,6 @@ const MessageHandler = {
       log.info('Game', `${code} — skip threshold reached, advancing`);
       room.skipVotes = new Set();
       GameLoop.advanceFromReveal(room);
-    }
-  },
-
-  async _uploadFile(ws, pid, msg, room, code) {
-    if (!this._requireRoom(ws, pid, room)) return;
-    if (!this._requireHost(ws, pid, room, code)) return;
-
-    const name = String(msg.name || 'file').slice(0, 200);
-    const data = String(msg.data || '');
-
-    if (!data) { this._error(ws, 'No file data received.'); return; }
-
-    try {
-      const buffer  = Buffer.from(data, 'base64');
-      
-      if (buffer.length > Config.LIMITS.MAX_FILE_BYTES) {
-        this._error(ws, `File too large (max ${Config.LIMITS.MAX_FILE_BYTES / (1024 * 1024)} MB).`);
-        return;
-      }
-
-      const nameLow = name.toLowerCase();
-      let text;
-
-      if (nameLow.endsWith('.pdf')) 
-      {
-        const result = await mathParser.extractFromPDF(buffer, name);
-        text = result.text;
-        if (result.warning) {
-          log.warn('Upload', `${code} — ${result.warning}`);
-          const player = room.players.get(pid);
-          if (player) RoomHelpers.sendTo(player, { type: 'status', msg: result.warning });
-        }
-      } else if (nameLow.endsWith('.docx') || nameLow.endsWith('.pptx')) {
-        const os           = require('os');
-        const path         = require('path');
-        const fs           = require('fs');
-        const officeParser = require('officeparser');
-        const tmp          = path.join(os.tmpdir(), `qf_${Date.now()}_${nameLow}`);
-        fs.writeFileSync(tmp, buffer);
-        try {
-          text = await officeParser.parseOffice(tmp, {});
-        } finally {
-          try { fs.unlinkSync(tmp); } catch { /* ignore */ }
-        }
-      } else {
-        text = buffer.toString('utf-8');
-      }
-
-      text = text.slice(0, Config.LIMITS.MAX_CONTEXT_CHARS);
-      log.info('Room', `${code} — file "${name}" extracted: ${text.length} chars`);
-
-      const player = room.players.get(pid);
-      if (player) RoomHelpers.sendTo(player, { type: 'file_text', name, text });
-    } catch (err) {
-      log.error('Upload', `${code} — failed to parse "${name}": ${err.message}`);
-      this._error(ws, `Could not extract text from "${name}". Try a .txt file instead.`);
     }
   },
 

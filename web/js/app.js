@@ -57,6 +57,15 @@ const App = (() => {
     conn.connect();
     _updateActivePlayers();
     setInterval(_updateActivePlayers, 30000);
+
+    // File upload via HTTP
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) {
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) lobby._loadFile(file);
+      });
+    }
   }
 
   // Expose everything so modules can call App.toast.show(), etc.

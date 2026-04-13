@@ -85,25 +85,27 @@ const GameLoop = {
       const points = 1000 + timeBonus + streakBonus;
       player.score += points;
 
-      RoomHelpers.sendTo(room, pid, {
+      RoomHelpers.sendTo(player, {
         type: 'answer_result',
         correct: true,
         points,
+        streak: player.streak,
         score: player.score,
       });
     } else {
       player.streak = 0;
-      RoomHelpers.sendTo(room, pid, {
+      RoomHelpers.sendTo(player, {
         type: 'answer_result',
         correct: false,
         points: 0,
+        streak: 0,
         score: player.score,
       });
     }
 
     RoomHelpers.broadcast(room, {
       type: 'player_answered',
-      count: Array.from(room.players.values()).filter(p => p.answered).length,
+      answered_count: Array.from(room.players.values()).filter(p => p.answered).length,
       total: room.players.size,
     });
 
