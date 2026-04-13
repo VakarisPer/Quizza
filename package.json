@@ -1,6 +1,6 @@
 {
   "name": "quiz-iio",
-  "version": "1.0.0",
+  "version": "1.8.1",
   "description": "Dviejų dalių sistema: **svetainė** kur genereruoji klausimus + **Python žaidimas** multiplayer vikotorinai.",
   "main": "server.js",
   "scripts": {

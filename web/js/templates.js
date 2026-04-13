@@ -38,7 +38,7 @@ class Templates {
       <footer id="quizza-footer">
         <div class="footer-top">
           <div class="footer-logo">QUIZ<em>ZA</em></div>
-          <span class="footer-version">v1.1.0</span>
+          <span class="footer-version">v1.8.1</span>
         </div>
         <div class="footer-links">
           <a href="/privacy.html">Privacy Policy</a>
@@ -48,7 +48,7 @@ class Templates {
           <a href="/about_us.html">About us</a>
         </div>
         <div class="footer-legal">
-          &copy; 2025 Quizza. Built by Vakaris Perliba &amp; Vitas Novickas.<br>
+          &copy; 2026 Quizza. Built by Vakaris Perliba &amp; Vitas Novickas.<br>
           Questions are AI-generated for entertainment purposes only.
           By playing you agree to our
           <a href="/privacy.html">Privacy Policy</a> and
