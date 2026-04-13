@@ -246,6 +246,14 @@ const QuestionService = {
       let raw = data.choices?.[0]?.message?.content || '';
       raw = raw.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
 
+      // Fix LaTeX backslashes that break JSON.parse (same as _fetchQuestions)
+      raw = raw
+        .replace(/\\\\/g, '\x00B\x00')
+        .replace(/\\"/g,  '\x00Q\x00')
+        .replace(/\\/g,   '\\\\')
+        .replace(/\x00B\x00/g, '\\\\')
+        .replace(/\x00Q\x00/g, '\\"');
+
       const questions = JSON.parse(raw);
 
       if (!Array.isArray(questions) || questions.length === 0) {

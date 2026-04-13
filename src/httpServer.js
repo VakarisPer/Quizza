@@ -5,6 +5,7 @@ const path      = require('path');
 const fs        = require('fs');
 const express   = require('express');
 const multer    = require('multer');
+const Config    = require('./config');
 const log       = require('./logger');
 const RoomStore = require('./roomStore');
 
@@ -15,7 +16,7 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 
 const upload = multer({
   dest: uploadsDir,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: Config.LIMITS.MAX_FILE_BYTES },
   fileFilter(_req, file, cb) {
     const allowed = /\.(txt|md|csv|json|pdf|doc|docx|xlsx|pptx|html|xml)$/i;
     if (allowed.test(path.extname(file.originalname))) {
