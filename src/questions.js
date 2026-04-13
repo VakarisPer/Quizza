@@ -34,19 +34,19 @@ const QuestionService = {
    * @param {number} count         Number of questions needed.
    * @returns {Promise<object[]>}
    */
-  async generate(topicContext, count, difficulty = 'normal') {
+  async generate(topicContext, count, difficulty = 'normal', language = 'English') {
     if (!Config.DEEPSEEK_API_KEY) {
       throw new Error('No API key configured — cannot generate questions.');
     }
 
     const contextChars = String(topicContext || '').slice(0, Config.LIMITS.AI_CONTEXT_CHARS);
-    log.info('AI', `Requesting ${count} questions from DeepSeek (context: ${contextChars.length} chars, difficulty: ${difficulty})`);
+    log.info('AI', `Requesting ${count} questions from DeepSeek (context: ${contextChars.length} chars, difficulty: ${difficulty}, language: ${language})`);
 
     // Connectivity ping before the expensive request
     const pingOk = await this._ping();
     if (!pingOk) throw new Error('DeepSeek API is unreachable. Check your connection or API key.');
 
-    return this._fetchQuestions(contextChars, count, difficulty);
+    return this._fetchQuestions(contextChars, count, difficulty, language);
   },
 
   // ── Private ────────────────────────────────────────────────────────────────
@@ -84,15 +84,17 @@ const QuestionService = {
   },
 
   /** Send the full question-generation request to DeepSeek. */
-  async _fetchQuestions(contextChars, count, difficulty = 'normal') {
+  async _fetchQuestions(contextChars, count, difficulty = 'normal', language = 'English') {
     const difficultyClause =
       difficulty === 'easy' ? 'Make questions straightforward and beginner-friendly.' :
       difficulty === 'hard' ? 'Make questions challenging, requiring specific or advanced knowledge.' :
                               'Make questions moderately challenging.';
 
+    const languageClause = `LANGUAGE REQUIREMENT (HIGHEST PRIORITY): You MUST generate ALL questions, options, and explanations in ${language}. This is non-negotiable.`;
+
     const userPrompt =
       `Generate ${count} multiple-choice quiz questions with 4 answer options ` +
-      `based on this material:\n\n${contextChars}\n\n${difficultyClause}\n\n` +
+      `based on this material:\n\n${contextChars}\n\n${difficultyClause}\n\n${languageClause}\n\n` +
       'IMPORTANT: Use LaTeX notation (with \\( \\) for inline and \\[ \\] for display math) for ALL mathematical expressions in questions, options, and explanations.(if its not mathematical, do not use LaTeX, and generate question based on the context) ' +
       'Each explanation must teach the concept — explain symbols, show steps, and state why the answer is correct. ' +
       'Return ONLY a JSON array.';
@@ -175,28 +177,30 @@ const QuestionService = {
   },
 
 
-  async generateOpen(topicContext, count, difficulty = 'normal') {
+  async generateOpen(topicContext, count, difficulty = 'normal', language = 'English') {
     if (!Config.DEEPSEEK_API_KEY) {
       throw new Error('No API key configured — cannot generate questions.');
     }
 
     const contextChars = String(topicContext || '').slice(0, Config.LIMITS.AI_CONTEXT_CHARS);
-    log.info('AI', `Requesting ${count} OPEN questions from DeepSeek`);
+    log.info('AI', `Requesting ${count} OPEN questions from DeepSeek (language: ${language})`);
 
     const pingOk = await this._ping();
     if (!pingOk) throw new Error('DeepSeek API is unreachable.');
 
-    return this._fetchOpenQuestions(contextChars, count, difficulty);
+    return this._fetchOpenQuestions(contextChars, count, difficulty, language);
   },
 
-  async _fetchOpenQuestions(contextChars, count, difficulty = 'normal') {
+  async _fetchOpenQuestions(contextChars, count, difficulty = 'normal', language = 'English') {
     const difficultyClause =
       difficulty === 'easy' ? 'Make questions straightforward and beginner-friendly.' :
       difficulty === 'hard' ? 'Make questions challenging, requiring specific knowledge.' :
                               'Make questions moderately challenging.';
 
+    const languageClause = `LANGUAGE REQUIREMENT (HIGHEST PRIORITY): You MUST generate ALL questions, answers, and explanations in ${language}. This is non-negotiable.`;
+
     const userPrompt =
-      `Generate ${count} open-ended quiz questions based on this material:\n\n${contextChars}\n\n${difficultyClause}\n\n` +
+      `Generate ${count} open-ended quiz questions based on this material:\n\n${contextChars}\n\n${difficultyClause}\n\n${languageClause}\n\n` +
       'Return ONLY a JSON array. Each element: {"q":"question","answer":"correct answer","topic":"topic","explanation":"explanation"}. ' +
       'The answer must be concise — a word, name, number, or short phrase. Not a full sentence.';
 

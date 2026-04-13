@@ -77,6 +77,7 @@ const MessageHandler = {
       settings: {
         maxPlayers: 0,
         difficulty: 'normal',
+        language: 'English',
       },
       _timerInterval: null,
       _revealTimeout: null,
@@ -147,11 +148,14 @@ const MessageHandler = {
 
     const maxPlayers = parseInt(msg.maxPlayers);
     const difficulty = msg.difficulty;
+    const language   = msg.language;
+    log.debug('Room', `${code} — updating settings: maxPlayers=${maxPlayers}, difficulty=${difficulty}, language=${language}`);
 
     room.settings.maxPlayers = Number.isFinite(maxPlayers) ? Math.max(0, maxPlayers) : 0;
     room.settings.difficulty = ['easy', 'normal', 'hard'].includes(difficulty) ? difficulty : 'normal';
+    room.settings.language = language ? String(language).slice(0, 20) : 'English';
 
-    log.debug('Room', `${code} — settings updated: maxPlayers=${room.settings.maxPlayers}, difficulty=${room.settings.difficulty}`);
+    log.debug('Room', `${code} — settings updated: maxPlayers=${room.settings.maxPlayers}, difficulty=${room.settings.difficulty}, language=${room.settings.language}`);
   },
 
   _startGame(ws, pid, msg, room, code) {

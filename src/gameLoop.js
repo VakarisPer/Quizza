@@ -35,10 +35,12 @@ const GameLoop = {
     let questions;
     try {
       const COUNTDOWN_MS = 3000;
+      const difficulty = room.settings?.difficulty || 'normal';
+      const language   = room.settings?.language  || 'English';
       [questions] = await Promise.all([
         room.questionMode === 'open'
-          ? QuestionService.generateOpen(room.topicContext, count, room.settings?.difficulty || 'normal')
-          : QuestionService.generate(room.topicContext, count, room.settings?.difficulty || 'normal'),
+          ? QuestionService.generateOpen(room.topicContext, count, difficulty, language)
+          : QuestionService.generate(room.topicContext, count, difficulty, language),
         new Promise(r => setTimeout(r, COUNTDOWN_MS)),
       ]);
     } catch (err) {
