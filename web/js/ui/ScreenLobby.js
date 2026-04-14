@@ -114,19 +114,34 @@ class ScreenLobby {
           <div class="card">
             <div class="card-title">AI Question Source</div>
             <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6;">
-              Optional — Upload a file and add specific instructions. The AI will generate quiz questions from your content.
+              Optional — Upload files and add specific instructions. The AI will generate quiz questions from your content.
             </p>
 
             <div class="field">
               <label for="ctx-text">Specific instructions</label>
               <textarea id="ctx-text"
                 placeholder="e.g. Focus on key terms only, make questions challenging, avoid true/false…"></textarea>
+              <div style="display:flex;gap:8px;margin-top:8px;">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="App.lobby.clearInstructions()" title="Clear instructions">
+                  🗑️ Clear
+                </button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Upload files</label>
               <div class="upload-area">
                 <label class="upload-label">
                   📎 Upload file
                   <input type="file" id="fileInput" accept=".txt,.md,.csv,.json,.pdf,.doc,.docx,.xlsx,.pptx,.html,.xml">
                 </label>
                 <span class="upload-name" id="fileName"></span>
+              </div>
+              <div id="file-list" class="file-list"></div>
+              <div id="file-content-preview" class="hidden" style="margin-top:8px;">
+                <label style="font-size:12px;color:var(--muted);margin-bottom:4px;display:block;">File content</label>
+                <textarea id="ctx-file-content" readonly
+                  style="width:100%;min-height:120px;resize:vertical;opacity:0.7;font-size:12px;"></textarea>
               </div>
             </div>
 

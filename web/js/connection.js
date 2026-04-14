@@ -12,6 +12,7 @@ class ConnectionManager {
     this._ws        = null;
     this._onMessage = onMessage;
     this._url       = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`;
+    this._hasConnectedBefore = false;
   }
 
   /** Open the WebSocket; automatically retries on close/error. */
@@ -25,7 +26,9 @@ class ConnectionManager {
       return;
     }
 
-    this._ws.onopen    = () => this._setStatus('ok', 'Connected');
+    this._ws.onopen    = () => {
+      this._setStatus('ok', 'Connected');
+    };
     this._ws.onclose   = () => {
       this._setStatus('err', 'Disconnected — retrying...');
       setTimeout(() => this.connect(), 3000);

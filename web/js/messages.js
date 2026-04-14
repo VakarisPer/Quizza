@@ -17,26 +17,50 @@ class MessageHandler {
       // ── Identity ──────────────────────────────────────────
       case 'connected':
         App.state.myPid = m.pid;
+        // Auto-rejoin if we had a room before disconnect
+        if (App.state.roomCode && App.state.myName) {
+          App.conn.send({ type: 'rejoin_room', name: App.state.myName, code: App.state.roomCode });
+        }
         break;
 
       // ── Room lifecycle ────────────────────────────────────
       case 'created':
+        App.state.roomCode = m.code;
         App.lobby.setCode(m.code);
         App.lobby.showAsHost();
         App.screens.show('screen-lobby');
         break;
 
       case 'joined':
+        App.state.roomCode = m.code;
         App.lobby.setCode(m.code);
         App.lobby.showAsPlayer();
         App.screens.show('screen-lobby');
         break;
 
+      case 'rejoined':
+        App.state.roomCode = m.code;
+        App.state.isHost = m.isHost;
+        App.lobby.setCode(m.code);
+        App.toast.show('Reconnected to the game!', 'ok');
+        // The room_state that follows will place us on the correct screen
+        break;
+
       case 'room_state':
         App.renderer.renderPlayers(m.players, m.state, App.state.myPid);
-        if (m.state === 'playing' && m.players?.length) {
-          App.renderer.renderLeaderboard(m.players, 'game-lb', App.state.myPid);
-          Utils.q('#game-lb-card').style.display = '';
+        // If we're rejoining mid-game, show the game screen
+        if (m.state === 'playing') {
+          if (m.players?.length) {
+            App.renderer.renderLeaderboard(m.players, 'game-lb', App.state.myPid);
+            Utils.q('#game-lb-card').style.display = '';
+          }
+          App.screens.show('screen-game');
+        } else if (m.state === 'lobby') {
+          App.screens.show('screen-lobby');
+        }
+        // Detect host status from snapshot
+        if (m.hostPid && m.hostPid === App.state.myPid) {
+          App.state.isHost = true;
         }
         break;
 

@@ -8,6 +8,7 @@ class LobbyController {
   constructor() {
     this._roomCode    = null;
     this._language    = 'english';  // AI question generation language
+    this._uploadedFiles = [];       // { name, text } for each uploaded file
   }
 
   /** The current room code (null before a room is created/joined). */
@@ -66,14 +67,20 @@ class LobbyController {
     App.state.isHost = false;
     App.state.myPid  = null;
     App.state.myName = '';
+    App.state.roomCode = null;
     App.screens.show('screen-home');
   }
 
   // ── AI source ─────────────────────────────────────────────
 
-  /** Send the textarea content as AI context to the server. */
+  /** Send the instructions + file content as AI context to the server. */
   saveContext() {
-    const context = Utils.q('#ctx-text').value.trim();
+    const instructions = Utils.q('#ctx-text').value.trim();
+    const fileContent = this._uploadedFiles.map(f => f.text).join('\n\n');
+    const parts = [];
+    if (fileContent)   parts.push(fileContent);
+    if (instructions)  parts.push('Instructions: ' + instructions);
+    const context = parts.join('\n\n');
     if (!context) return;
     App.conn.send({ type: 'set_context', context, language: this._language });
     Utils.q('#ctx-saved-notice').classList.remove('hidden');
@@ -92,22 +99,6 @@ class LobbyController {
     if (file) this._loadFile(file);
   }
 
-  // ── Game settings ─────────────────────────────────────────
-
-  /** Toggle visibility of custom language input field. */
-  // toggleCustomLanguage() 
-  // {
-  //   const select = Utils.q('#s-language');
-  //   const customInput = Utils.q('#s-language-custom');
-
-  //   if (select.value === 'Other') {
-  //     customInput.classList.remove('hidden');
-  //     customInput.focus();
-  //   } else {
-  //     customInput.classList.add('hidden');
-  //     this.updateSettings();
-  //   }
-  // }
 
   /** Send updated room settings (max players, difficulty, language) to the server. */
   updateSettings() 
@@ -191,11 +182,10 @@ class LobbyController {
       .then(({ ok, data }) => {
         if (!ok) throw new Error(data.error || 'Upload failed');
 
-        const textarea = Utils.q('#ctx-text');
-        textarea.value = textarea.value
-          ? textarea.value + '\n\n' + data.text
-          : data.text;
-        nameEl.textContent = `✓ ${file.name} loaded`;
+        this._uploadedFiles.push({ name: file.name, text: data.text });
+        this._renderFileList();
+        this._updateFileContentPreview();
+        nameEl.textContent = '';
         App.toast.show('File loaded: ' + file.name, 'ok');
       })
       .catch(err => {
@@ -206,6 +196,47 @@ class LobbyController {
     // Reset input so the same file can be re-selected
     const input = Utils.q('#fileInput');
     if (input) input.value = '';
+  }
+
+  /** Remove a file from the uploaded list by index. */
+  removeFile(index) {
+    this._uploadedFiles.splice(index, 1);
+    this._renderFileList();
+    this._updateFileContentPreview();
+  }
+
+  /** Render the list of uploaded files with delete buttons. */
+  _renderFileList() {
+    const container = Utils.q('#file-list');
+    if (!container) return;
+
+    if (this._uploadedFiles.length === 0) {
+      container.innerHTML = '';
+      Utils.q('#file-content-preview')?.classList.add('hidden');
+      return;
+    }
+
+    Utils.q('#file-content-preview')?.classList.remove('hidden');
+
+    container.innerHTML = this._uploadedFiles.map((f, i) =>
+      `<div class="file-chip">
+        <span class="file-chip-name">${Utils.h(f.name)}</span>
+        <button type="button" class="file-chip-remove" onclick="App.lobby.removeFile(${i})" title="Remove file">&times;</button>
+      </div>`
+    ).join('');
+  }
+
+  /** Update the hidden file content preview textarea. */
+  _updateFileContentPreview() {
+    const textarea = Utils.q('#ctx-file-content');
+    if (textarea) {
+      textarea.value = this._uploadedFiles.map(f => `--- ${f.name} ---\n${f.text}`).join('\n\n');
+    }
+  }
+
+  /** Clear the instructions textarea. */
+  clearInstructions() {
+    Utils.q('#ctx-text').value = '';
   }
 
   setQuestionMode(mode) {

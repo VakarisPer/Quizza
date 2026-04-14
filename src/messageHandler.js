@@ -33,6 +33,7 @@ const MessageHandler = {
     switch (action) {
       case 'create_room': return this._createRoom(ws, pid, msg);
       case 'join_room':   return this._joinRoom(ws, pid, msg);
+      case 'rejoin_room': return this._rejoinRoom(ws, pid, msg);
       case 'set_context':      return this._setContext(ws, pid, msg, room, code);
       case 'update_settings':  return this._updateSettings(ws, pid, msg, room, code);
       case 'start_game':  return this._startGame(ws, pid, msg, room, code);
@@ -118,6 +119,52 @@ const MessageHandler = {
     log.info('Room', `${code} — ${name} (${pid}) joined (${room.players.size} total)`);
 
     RoomHelpers.sendTo(player, { type: 'joined', code, pid, name });
+    RoomHelpers.broadcast(room, { type: 'player_joined', pid, name }, pid);
+    RoomHelpers.broadcast(room, RoomHelpers.roomSnapshot(room));
+    require('./wsServer').broadcastRoomsUpdate();
+  },
+
+  _rejoinRoom(ws, pid, msg) {
+    const code = String(msg.code || '').toUpperCase().trim();
+    const name = this._sanitizeName(msg.name);
+
+    if (!/^[A-Z0-9]{5}$/.test(code)) {
+      this._error(ws, 'Invalid room code.');
+      return;
+    }
+
+    const room = RoomStore.rooms.get(code);
+    if (!room) {
+      this._error(ws, `Room "${code}" was not found.`);
+      return;
+    }
+
+    const player = RoomHelpers.rejoinPlayer(ws, pid, name, code);
+    if (!player) {
+      this._error(ws, 'No disconnected slot found for your name in that room. Try joining normally.');
+      return;
+    }
+
+    const isHost = room.hostPid === pid;
+
+    RoomHelpers.sendTo(player, { type: 'rejoined', code, pid, name, isHost });
+    RoomHelpers.sendTo(player, RoomHelpers.roomSnapshot(room));
+
+    // If a question is active, re-send it
+    if (room.state === 'playing' && room.currentQ < room.questions.length) {
+      const q = room.questions[room.currentQ];
+      RoomHelpers.sendTo(player, {
+        type:     'question',
+        index:    room.currentQ,
+        total:    room.questions.length,
+        question: q.q,
+        options:  q.options || [],
+        topic:    q.topic || '',
+        duration: room.config.roundDuration,
+        mode:     room.questionMode || 'multiple',
+      });
+    }
+
     RoomHelpers.broadcast(room, { type: 'player_joined', pid, name }, pid);
     RoomHelpers.broadcast(room, RoomHelpers.roomSnapshot(room));
     require('./wsServer').broadcastRoomsUpdate();
@@ -250,11 +297,12 @@ const MessageHandler = {
     }
 
     const answeredCount = Array.from(room.players.values()).filter(p => p.answered).length;
+    const connectedCount = Array.from(room.players.values()).filter(p => !p.disconnected).length;
     RoomHelpers.broadcast(room, {
       type:           'player_answered',
       pid,
       answered_count: answeredCount,
-      total:          room.players.size,
+      total:          connectedCount,
     }, pid);
   },
 
@@ -284,8 +332,8 @@ const MessageHandler = {
     if (!room.skipVotes) room.skipVotes = new Set();
     room.skipVotes.add(pid);
 
-    const total  = room.players.size;
-    const needed = total; // all players must agree to skip
+    const total  = Array.from(room.players.values()).filter(p => !p.disconnected).length;
+    const needed = total; // all connected players must agree to skip
     const count  = room.skipVotes.size;
 
     log.debug('Game', `${code} — skip vote: ${count}/${needed}`);

@@ -72,12 +72,14 @@ class GameRenderer {
     Utils.q('#players-list').innerHTML = players.map(p => {
       const isYou = p.pid === myPid;
       const isHst = p.pid === hostPid;
+      const isDc  = p.disconnected;
       const letter = (p.name || 'A')[0].toUpperCase();
       return `
-        <div class="player-item ${isYou ? 'is-you' : ''} ${state !== 'lobby' && p.answered ? 'answered' : ''}">
+        <div class="player-item ${isYou ? 'is-you' : ''} ${state !== 'lobby' && p.answered ? 'answered' : ''} ${isDc ? 'disconnected' : ''}">
           <div class="player-left">
-            <div class="player-avatar" style="${isHst ? 'background:var(--accent);color:white;' : ''}">${Utils.h(letter)}</div>
-            <span>${Utils.h(p.name)}</span>
+            <div class="player-avatar" style="${isHst ? 'background:var(--accent);color:white;' : ''}${isDc ? 'opacity:0.4;' : ''}">${Utils.h(letter)}</div>
+            <span${isDc ? ' style="opacity:0.4;text-decoration:line-through;"' : ''}>${Utils.h(p.name)}</span>
+            ${isDc ? '<span style="font-size:10px;color:var(--muted);margin-left:4px;">disconnected</span>' : ''}
           </div>
           <div class="player-right">
             ${state !== 'lobby' ? `<div class="answered-dot ${p.answered ? '' : 'waiting'}"></div>` : ''}

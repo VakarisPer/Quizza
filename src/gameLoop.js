@@ -106,10 +106,10 @@ const GameLoop = {
     RoomHelpers.broadcast(room, {
       type: 'player_answered',
       answered_count: Array.from(room.players.values()).filter(p => p.answered).length,
-      total: room.players.size,
+      total: Array.from(room.players.values()).filter(p => !p.disconnected).length,
     });
 
-    const allAnswered = Array.from(room.players.values()).every(p => p.answered);
+    const allAnswered = Array.from(room.players.values()).filter(p => !p.disconnected).every(p => p.answered);
     if (allAnswered) {
       clearInterval(room._timerInterval);
       this._revealAnswer(room);
@@ -168,7 +168,7 @@ const GameLoop = {
       remaining -= 1;
       RoomHelpers.broadcast(room, { type: 'timer', remaining });
 
-      const allAnswered = Array.from(room.players.values()).every(p => p.answered);
+      const allAnswered = Array.from(room.players.values()).filter(p => !p.disconnected).every(p => p.answered);
       const timeUp      = remaining <= 0;
 
       if (timeUp || allAnswered) {

@@ -97,14 +97,16 @@ const RoomHelpers = {
       type:        'room_state',
       code:        room.code,
       state:       room.state,
+      hostPid:     room.hostPid,
       players:     Array.from(room.players.values())
         .sort((a, b) => b.score - a.score)
         .map(p => ({
-          pid:      p.pid,
-          name:     p.name,
-          score:    p.score,
-          answered: p.answered,
-          streak:   p.streak,
+          pid:          p.pid,
+          name:         p.name,
+          score:        p.score,
+          answered:     p.answered,
+          streak:       p.streak,
+          disconnected: !!p.disconnected,
         })),
       current_q:   room.currentQ,
       total_q:     room.questions.length,
@@ -116,7 +118,9 @@ const RoomHelpers = {
 
   /**
    * Remove a player from their room.
-   * Deletes the room entirely if it becomes empty.
+   * During an active game, the player is kept as "disconnected" for 5 minutes
+   * so they can rejoin. In lobby/results state, they are removed immediately.
+   * Deletes the room entirely if all players are gone.
    *
    * @param {string} pid
    */
@@ -127,22 +131,103 @@ const RoomHelpers = {
     const room = RoomStore.rooms.get(code);
     if (!room) return;
 
-    if (room.players.has(pid)) {
-      const name = room.players.get(pid).name;
-      room.players.delete(pid);
+    const player = room.players.get(pid);
+    if (!player) return;
+
+    const name = player.name;
+
+    // During an active game, keep the player slot for rejoin
+    if (room.state === 'playing' || room.state === 'starting') {
+      player.disconnected = true;
+      player.disconnectedAt = Date.now();
+      player.ws = { send() { throw new Error('disconnected'); }, readyState: 3 };
       RoomStore.pidToRoom.delete(pid);
 
-      log.info('Room', `${code} — player left: ${name} (${pid}), ${room.players.size} remaining`);
-      this.broadcast(room, { type: 'player_left', pid, name });
+      log.info('Room', `${code} — ${name} (${pid}) disconnected mid-game, holding slot for 5 min`);
+      this.broadcast(room, { type: 'player_left', pid, name, disconnected: true });
       this.broadcast(room, this.roomSnapshot(room));
+
+      // Schedule cleanup after 5 minutes if they haven't rejoined
+      if (!room._rejoinTimers) room._rejoinTimers = {};
+      room._rejoinTimers[pid] = setTimeout(() => {
+        if (room.players.has(pid) && room.players.get(pid).disconnected) {
+          room.players.delete(pid);
+          log.info('Room', `${code} — ${name} (${pid}) rejoin window expired, removed`);
+          this.broadcast(room, { type: 'player_left', pid, name });
+          this.broadcast(room, this.roomSnapshot(room));
+          this._cleanupEmptyRoom(room, code);
+        }
+      }, 5 * 60 * 1000);
+      return;
     }
 
-    if (room.players.size === 0) {
+    // Lobby or results — remove immediately
+    room.players.delete(pid);
+    RoomStore.pidToRoom.delete(pid);
+
+    log.info('Room', `${code} — player left: ${name} (${pid}), ${room.players.size} remaining`);
+    this.broadcast(room, { type: 'player_left', pid, name });
+    this.broadcast(room, this.roomSnapshot(room));
+
+    this._cleanupEmptyRoom(room, code);
+  },
+
+  /** Delete a room if it has no active (connected) players. */
+  _cleanupEmptyRoom(room, code) {
+    const activePlayers = Array.from(room.players.values()).filter(p => !p.disconnected);
+    if (activePlayers.length === 0) {
       if (room._revealTimeout) clearTimeout(room._revealTimeout);
       if (room._timerInterval) clearInterval(room._timerInterval);
+      if (room._rejoinTimers) {
+        Object.values(room._rejoinTimers).forEach(t => clearTimeout(t));
+      }
       RoomStore.rooms.delete(code);
-      log.info('Room', `${code} deleted (empty)`);
+      log.info('Room', `${code} deleted (no active players)`);
     }
+  },
+
+  /**
+   * Attempt to rejoin a disconnected player to a room.
+   * Returns the player object if successful, null otherwise.
+   *
+   * @param {import('ws')} ws
+   * @param {string} newPid
+   * @param {string} name
+   * @param {string} code
+   * @returns {object|null}
+   */
+  rejoinPlayer(ws, newPid, name, code) {
+    const room = RoomStore.rooms.get(code);
+    if (!room) return null;
+
+    // Find a disconnected player with matching name
+    for (const [oldPid, player] of room.players.entries()) {
+      if (player.disconnected && player.name === name) {
+        // Clear the rejoin timeout
+        if (room._rejoinTimers?.[oldPid]) {
+          clearTimeout(room._rejoinTimers[oldPid]);
+          delete room._rejoinTimers[oldPid];
+        }
+
+        // Swap the old pid for the new one
+        room.players.delete(oldPid);
+        player.ws = ws;
+        player.pid = newPid;
+        player.disconnected = false;
+        delete player.disconnectedAt;
+        room.players.set(newPid, player);
+        RoomStore.pidToRoom.set(newPid, code);
+
+        // Transfer host if the disconnected player was the host
+        if (room.hostPid === oldPid) {
+          room.hostPid = newPid;
+        }
+
+        log.info('Room', `${code} — ${name} rejoined (old pid: ${oldPid}, new pid: ${newPid})`);
+        return player;
+      }
+    }
+    return null;
   },
 };
 

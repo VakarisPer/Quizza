@@ -101,9 +101,19 @@ const QuestionService = {
 
     const languageClause = `LANGUAGE REQUIREMENT (HIGHEST PRIORITY): You MUST generate ALL questions, options, and explanations in ${language}. This is non-negotiable.`;
 
+    // Extract host instructions from context if present
+    let material = contextChars;
+    let instructionsClause = '';
+    const instrMatch = contextChars.match(/\nInstructions:\s*(.+)/s);
+    if (instrMatch) {
+      material = contextChars.slice(0, instrMatch.index).trim();
+      instructionsClause = `HOST INSTRUCTIONS (HIGHEST PRIORITY — follow these exactly): ${instrMatch[1].trim()}`;
+    }
+
     const userPrompt =
       `Generate ${count} multiple-choice quiz questions with 4 answer options ` +
-      `based on this material:\n\n${contextChars}\n\n${difficultyClause}\n\n${languageClause}\n\n` +
+      `based on this material:\n\n${material}\n\n${difficultyClause}\n\n${languageClause}\n\n` +
+      (instructionsClause ? instructionsClause + '\n\n' : '') +
       'CRITICAL FORMAT RULES:\n' +
       '1. Each option must be ONLY the answer text. NEVER add letter prefixes like "A)", "B.", etc. The app UI adds A/B/C/D automatically.\n' +
       '2. If the provided material is unreadable, garbled, or does not make sense, still generate questions — use your own knowledge about the topic you can infer from the material. Never refuse.\n' +
@@ -215,8 +225,20 @@ const QuestionService = {
 
     const languageClause = `LANGUAGE REQUIREMENT (HIGHEST PRIORITY): You MUST generate ALL questions, answers, and explanations in ${language}. This is non-negotiable.`;
 
+    // Extract host instructions from context if present
+    let material = contextChars;
+    let instructionsClause = '';
+    const instrMatch = contextChars.match(/\nInstructions:\s*(.+)/s);
+    if (instrMatch) {
+      material = contextChars.slice(0, instrMatch.index).trim();
+      instructionsClause = `HOST INSTRUCTIONS (HIGHEST PRIORITY — follow these exactly): ${instrMatch[1].trim()}`;
+    }
+
+    console.log(instructionsClause);
+
     const userPrompt =
-      `Generate ${count} open-ended quiz questions based on this material:\n\n${contextChars}\n\n${difficultyClause}\n\n${languageClause}\n\n` +
+      `Generate ${count} open-ended quiz questions based on this material:\n\n${material}\n\n${difficultyClause}\n\n${languageClause}\n\n` +
+      (instructionsClause ? instructionsClause + '\n\n' : '') +
       'CRITICAL RULES:\n' +
       '1. If the provided material is unreadable, garbled, or does not make sense, still generate questions — use your own knowledge about the topic you can infer from the material. Never refuse.\n' +
       '2. The answer must be concise — a word, name, number, or short phrase. Not a full sentence.\n' +

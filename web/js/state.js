@@ -13,4 +13,7 @@ const AppState = {
 
   /** True when this client created the room. */
   isHost: false,
+
+  /** Room code of the current/last game (for rejoin). */
+  roomCode: null,
 };

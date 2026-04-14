@@ -100,7 +100,7 @@ class WsServer {
       msg.name = sanitize(msg.name);
     }
 
-    if (msg.type === 'join_room') {
+    if (msg.type === 'join_room' || msg.type === 'rejoin_room') {
       const code = String(msg.code || '').toUpperCase().trim();
       if (!/^[A-Z0-9]{5}$/.test(code)) {
         log.warn('WS', `${pid} sent invalid room code: ${msg.code}`);
